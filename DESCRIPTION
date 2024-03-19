@@ -1,0 +1,19 @@
+Package: joint
+Type: Package
+Title: Fit Joint Endpoint Models to Efficiently Estimate Treatment Effects
+Version: 0.1.0
+Authors@R: 
+    person(given = "Jack",
+           family = "Wolf",
+           role = c("aut", "cre"),
+           email = "jackwolf910@gmail.com",
+           comment = c(ORCID = "0000-0002-8919-8740"))
+Maintainer: The package maintainer <yourself@somewhere.net>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Depends: 
+    R (>= 2.10)
+RoxygenNote: 7.2.1

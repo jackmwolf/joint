@@ -1,0 +1,350 @@
+## FUNCTIONS FOR ESTIMATING JOINT MODELS
+
+#' Estimate a joint model using SEM constraints
+#'
+#' @param data0 Data frame with treatment assignment and endpoints
+#' @param endpints Character vector of endpoint names as in \code{data0}
+#' @param categorical Character vector of endpoint names to be treated as
+#'   categorical (binary or ordinal) variables
+#' @param sandwich Logical indicator for whether to return the sandwich variance
+#'   estimator in addition to the model-based estimator.
+#' @param debug Logical indicator to print diagnoistic information
+#' @param ... additional arguments to [stats::nlm()].
+#'
+#' @return An object of class [joint_sem]
+#' @examples
+#' data(joint_example)
+#' fit <- joint_sem(
+#'   joint_example, endpoints = c("Y1", "Y2", "Y3_cat"), categorical = "Y3_cat")
+#' fit
+#' estimate_effects(fit, risk_difference = "Y3_cat")
+#' @export
+joint_sem <- function(data0, endpoints, categorical = c(), sandwich = FALSE, debug = FALSE, ...) {
+  t0 <- Sys.time()
+
+  if (debug) cat("Verifying input\n")
+  verify_input_joint_sem(data0 = data0, endpoints = endpoints, categorical = categorical)
+
+  if (debug) cat("Initalizing phi\n")
+  phi_init <- initalize_phi(data0 = data0, endpoints = endpoints, categorical = categorical, ...)
+
+  if (debug) cat("Maximizing log likelihood\n")
+  # Parameter estimation ---
+  # Maximize -1 * log likelihood using nlm
+  suppressWarnings({
+    mle <- nlm(
+      f = function(.x, ...) -1 * ll_sem(.x, ...),
+      data0 = data0,
+      endpoints = endpoints,
+      categorical = categorical,
+      .names = names(phi_init),
+      p = phi_init,
+      hessian = TRUE,
+      ...
+    )
+  })
+
+  names(mle$estimate) <- names(phi_init)
+  colnames(mle$hessian) <- rownames(mle$hessian) <- names(phi_init)
+
+  if (debug) cat("Estimating model-based variance\n")
+  # Variance estimation ---
+  # E{H(theta)}^-1
+  H_inv <- solve(mle$hessian)
+  V_model <- H_inv
+  V_out <- list(vcov = V_model)
+
+  if (sandwich) {
+    if (debug) cat("Estimating sandwich variance\n")
+    # E{G(theta)^T(theta)}
+    # Could improve computation by writing out closed form gradient/score function
+    Gi <- sapply(
+      split(data0, seq(nrow(data0))),
+      function(.x) numDeriv::grad(
+        ll_sem,
+        x = mle$estimate,
+        data0 = .x,
+        endpoints = endpoints,
+        categorical = categorical,
+        .names = names(phi_init)
+      )
+    )
+
+    GtG <- Gi %*% t(Gi)
+    V_sand <- H_inv %*% GtG %*% H_inv
+    dimnames(V_sand) <- dimnames(V_model)
+    V_out$vcov_sandwhich <- V_sand
+  }
+
+  # Output ---
+  if (debug) cat("Preparing output\n")
+  t1 <- Sys.time()
+  out <- list(
+    estimate = mle$estimate,
+    ll = mle$minimum,
+    runtime = as.numeric(t1 - t0, units = "secs"),
+    endpoints = endpoints,
+    categorical = categorical
+  )
+  out <- append(out, V_out)
+  class(out) <- "joint_sem"
+  return(out)
+}
+
+#' Create initial vector of parameter values for estimating a joint model
+#'
+#' @inheritParams joint_sem
+#' @param gamma Initial value of the gamma parameter, defaults to 2
+#' @return A named vector of initial parameter values for likelihood
+#'   maximization.
+initalize_phi <- function(data0, endpoints, categorical = c(), gamma = 2) {
+  # Initialize parameters ---
+  P <- length(endpoints)
+  q <- length(categorical)
+
+  if (q > 0) {
+    # Identify appropriate # levels for categorical endpoints
+    n_levels <- apply(data0[, categorical, drop = FALSE], MARGIN = 2, function(.x) length(unique(.x[!is.na(.x)])))
+    # Number of required threshold parameters for partitioning real line for
+    # the probit model (-infty < 0 < a1 < a2 < ... < a_nthresholds < infty)
+    n_thresholds <- n_levels - 2
+  }
+
+  nu <- vector(mode = "double", length = P)
+  lambda <- vector(mode = "double", length = P)
+  theta <- vector(mode = "double", length = 0)
+  a <- vector(mode = "double", length = 0)
+
+
+  for (p in 1:length(endpoints)) {
+    if (endpoints[p] %in% categorical) {
+
+      nu[p] <- qnorm(1 - mean(data0[data0$A == 0, endpoints[p]] == 0))
+      lambda[p] <- 1/gamma * (1 - mean(data0[data0$A == 1, endpoints[p]] == 0) - nu[p])
+
+      if (n_thresholds[endpoints[p]] > 0) {
+
+        cum_props_p <- cumsum(prop.table(table(data0[data0$A == 0, endpoints[p]])))
+        a_p <- qnorm(cum_props_p)[2:(length(cum_props_p) - 1)]
+        names(a_p) <- paste0("a_", endpoints[p], "_", 1:length(a_p))
+        a <- c(a, a_p)
+
+      }
+
+    } else {
+
+      nu[p] <- mean(data0[data0$A == 0, endpoints[p]])
+      lambda[p] <- 1/gamma * (mean(data0[data0$A == 1, endpoints[p]]) - nu[p])
+      theta_p <- max(var(data0[data0$A == 0, endpoints[p]]) - lambda[p]^2, 0)
+      names(theta_p) <- paste0("theta_", endpoints[p])
+      theta <- c(theta, theta_p)
+
+    }
+
+    names(nu)[p] <- paste0("nu_", endpoints[p])
+    names(lambda)[p] <- paste0("lambda_", endpoints[p])
+  }
+
+  phi_init <- c(
+    gamma,
+    nu,
+    lambda,
+    theta,
+    a
+  )
+
+  names(phi_init)[1] <- "gamma"
+  return(phi_init)
+}
+
+#' Calculate the log likelihood for a joint model using SEM constraints
+#'
+#' @param phi Named vector of parameter values
+#' @param .names Optimal vector of names for phi
+#' @inheritParams joint_sem
+#' @return The log likelihood for the input parameters and data
+ll_sem <- function(phi, data0, endpoints, categorical, .names = NULL) {
+
+  if (!is.null(.names)) names(phi) <- .names
+
+  P <- length(endpoints)
+  q <- length(categorical)
+
+  continuous <- endpoints[!(endpoints %in% categorical)]
+
+  gamma <- phi["gamma"]
+  nu <- phi[paste0("nu_", endpoints)]
+  lambda <- phi[paste0("lambda_", endpoints)]
+  theta <- vector(mode = "double", length = P)
+
+  for (p in 1:length(endpoints)) {
+    if (endpoints[p] %in% categorical) {
+      theta[p] <- 1
+    } else {
+      theta[p] <- phi[paste0("theta_", endpoints[p])]
+    }
+  }
+  names(theta) <- paste0("theta_", endpoints)
+
+  n <- nrow(data0)
+
+  # E(Y, Y*) ---
+  mu <- matrix(1, n) %*% matrix(nu, nrow = 1) +
+    as.matrix(data0$A, ncol = 1) %*% matrix(gamma * lambda, nrow = 1)
+  colnames(mu) <- endpoints
+
+  # V(Y) ---
+  Sigma <- lambda %*% t(lambda) + diag(theta, nrow = P, ncol = P)
+  colnames(Sigma) <- rownames(Sigma) <- endpoints
+  if (any(eigen(Sigma)$values <= 0)) return(Inf)
+
+  # Likelihood contributions ---
+  ## Continuous endpoints ===
+  if (P - q > 0) {
+    E <- data0[, continuous, drop = FALSE] - mu[, continuous, drop = FALSE]
+    V <- Sigma[continuous, continuous, drop = FALSE]
+
+    ll_continuous <- mvnfast::dmvn(X = as.matrix(E), mu = rep(0, ncol(E)), sigma = V,
+                                   log = TRUE)
+  } else {
+    ll_continuous <- rep(0, n)
+  }
+
+  ## Categorical endpoints ===
+  if (q > 0) {
+
+    if (P - q > 0) {
+      # Conditional mean and variance
+      # conditional expectation
+      # print(Sigma[categorical, categorical, drop = FALSE])
+      c_e <- mu[, categorical, drop = FALSE] +
+        t(Sigma[categorical, continuous, drop = FALSE] %*%
+            solve(Sigma[continuous, continuous, drop = FALSE]) %*%
+            t(E)
+        )
+
+      # conditional variance
+      c_v <- Sigma[categorical, categorical, drop = FALSE] -
+        Sigma[categorical, continuous, drop = FALSE] %*%
+        solve(V[continuous, continuous, drop = FALSE]) %*%
+        Sigma[continuous, categorical, drop = FALSE]
+    } else {
+      c_e <- mu[, categorical, drop = FALSE]
+      cv <- Sigma[categorical, categorical, drop = FALSE]
+    }
+
+    # Set up bounds for integration
+    lb <- matrix(nrow = n, ncol = length(categorical))
+    ub <- matrix(nrow = n, ncol = length(categorical))
+
+    for (p in 1:length(categorical)) {
+      thresholds <- c(
+        -Inf, 0,
+        phi[grep(paste0("a_", categorical[p], "_"), names(phi))],
+        Inf
+      )
+      lb[, p] <- thresholds[data0[, categorical[p]] + 1]
+      ub[, p] <- thresholds[data0[, categorical[p]] + 2]
+    }
+
+    ll_categorical <- vector(length = n)
+
+    # Calculate probabilities for each observation by integrating over
+    # q-dimensional hyper-rectangle bounded within lb[i, ], ub[i, ]
+    # SLOW AND REQUIRES INVERTING SIGMA EVERY TIME
+    for (i in 1:n) {
+      ll_categorical[i] <- log(
+        mvtnorm::pmvnorm(
+          lower = lb[i, ], upper = ub[i, ], mean = c_e[i, ], sigma = c_v,
+          keepAttr = FALSE))
+    }
+  } else {
+    ll_categorical <- rep(0, n)
+  }
+
+  return(sum(ll_continuous + ll_categorical))
+}
+
+
+#' Estimate treatment effects from a joint model
+#'
+#' @param model An object of class [joint_sem]
+#' @param risk_difference Names of endpoints for which to calculate the risk
+#'   difference.
+#' @param sandwich Logical indicator to use the sandwich variance estimator
+#' @inherit joint_sem examples
+estimate_effects <- function(model, risk_difference = c(), sandwich = FALSE) {
+
+  estimate <- model$estimate
+
+  if (sandwich) {
+    if (!is.null(model$vcov_sandwich)) {
+      vcov <- model$vcov_sandwich
+    } else {
+      warning("Input model does not have sandwich variance matrix. Using model-based variance.")
+      vcov <- model$vcov
+    }
+  } else {
+    vcov <- model$vcov
+  }
+
+  endpoints <- model$endpoints
+
+  params <- c("gamma", paste0("lambda_", endpoints))
+  if (length(risk_difference) > 0) {
+    params <- c(params, paste0("nu_", risk_difference))
+  }
+
+  beta <- estimate[params]
+  V <- vcov[params, params]
+
+  # Vector for storing point estimates
+  ests <- vector(mode = "double", length = length(endpoints) + length(risk_difference))
+  if (length(risk_difference) > 0) {
+    names(ests) <- c(endpoints, paste0(risk_difference, "_RD"))
+  } else {
+    names(ests) <- endpoints
+  }
+
+
+  # Matrix of gradient for transformation beta --> ests
+  j <- matrix(0, nrow = length(ests), ncol = length(beta))
+  rownames(j) <- names(ests)
+  colnames(j) <- names(beta)
+
+  # Effects on link scale
+  for (y in endpoints) {
+    ests[y] <- beta["gamma"] * beta[paste0("lambda_", y)]
+    j[y, "gamma"] <- beta[paste0("lambda_", y)]
+    j[y, paste0("lambda_", y)] <- beta["gamma"]
+  }
+
+  # Effects on risk difference scale
+  for (y in risk_difference) {
+    gamma <- beta["gamma"]
+    nu <- beta[paste0("nu_", y)]
+    lambda <- estimate[paste0("lambda_", y)]
+
+    ests[paste0(y, "_RD")] <- unname(
+      pnorm((nu + gamma * lambda)/sqrt(1 + lambda^2)) -
+        pnorm((nu)/sqrt(1 + lambda^2))
+    )
+
+    d1 <- dnorm((nu + gamma * lambda)/sqrt(1 + lambda^2))
+    d0 <- dnorm((nu)/sqrt(1 + lambda^2))
+
+    j[paste0(y, "_RD"), "gamma"] <- d1 * lambda/sqrt(1 + lambda^2)
+    j[paste0(y, "_RD"), paste0("nu_", y)] <- (d1 - d0) * 1/sqrt(1 + lambda^2)
+    j[paste0(y, "_RD"), paste0("lambda_", y)] <-
+      (d1 * (gamma - nu * lambda) - d0 * (-nu * lambda))/
+      (1 + lambda^2)^(3/2)
+  }
+
+  v_est <- j %*% V %*% t(j)
+
+  out <- list(
+    estimate = ests,
+    vcov = v_est
+  )
+  return(out)
+}
