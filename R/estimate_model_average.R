@@ -1,5 +1,11 @@
 ## FUNCTIONS FOR MODEL AVERAGING
 
+#' Estimate the ATE with various methods for simulation studies
+#'
+#' @inheritParams joint_sem
+#' @return A data.frame with point estimates, standard error estimates, test
+#'   statistics, and 95% confidence interval bounds
+#' @export
 joint_ma_sim <- function(
     data0, endpoints, categorical = c(), treatment = "A", nboot = 100, ...) {
 
