@@ -9,7 +9,8 @@ joint_ma_sim(
   endpoints,
   categorical = c(),
   treatment = "A",
-  nboot = 100,
+  n_boot = 100,
+  ci_level = 0.95,
   ...
 )
 }
@@ -22,6 +23,10 @@ categorical (binary or ordinal) variables}
 \item{treatment}{Character name of the column name corresponding to binary
 0-1 treatment indicator.}
 
+\item{n_boot}{Number of bootstrap replications to perform}
+
+\item{ci_level}{The confidence level required}
+
 \item{...}{additional arguments to [stats::nlm()].}
 }
 \value{
@@ -30,4 +35,11 @@ A data.frame with point estimates, standard error estimates, test
 }
 \description{
 Estimate the ATE with various methods for simulation studies
+}
+\examples{
+data(joint_example)
+# Using n_boot = 5 for example purposes only, use more bootstrap iterations
+# in practice!
+joint_ma_sim(joint_example, c("Y1", "Y2", "Y3"), n_boot = 5)
+
 }

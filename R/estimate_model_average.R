@@ -3,11 +3,20 @@
 #' Estimate the ATE with various methods for simulation studies
 #'
 #' @inheritParams joint_sem
+#' @param n_boot Number of bootstrap replications to perform
+#' @param ci_level The confidence level required
 #' @return A data.frame with point estimates, standard error estimates, test
 #'   statistics, and 95% confidence interval bounds
+#' @examples
+#' data(joint_example)
+#' # Using n_boot = 5 for example purposes only, use more bootstrap iterations
+#' # in practice!
+#' joint_ma_sim(joint_example, c("Y1", "Y2", "Y3"), n_boot = 5)
+#'
 #' @export
 joint_ma_sim <- function(
-    data0, endpoints, categorical = c(), treatment = "A", nboot = 100, ...) {
+    data0, endpoints, categorical = c(), treatment = "A", n_boot = 100,
+    ci_level = 0.95, ...) {
 
 
   est_ma <- estimate_ma(
@@ -15,12 +24,12 @@ joint_ma_sim <- function(
     treatment = treatment, ...)
 
   # Estimate sampling distribution of ma estimator treating weights as fixed
-  v_ma_fixed <- drop(omega %*% (est_ma$ate_ma^2 + est_ma$v_models)) -
+  v_ma_fixed <- drop(est_ma$omega %*% (est_ma$ate_ma^2 + est_ma$v_models)) -
     est_ma$ate_ma^2
 
   Z_ma_fixed <- est_ma$ate_ma / sqrt(v_ma_fixed)
 
-  alpha <- 0.05
+  alpha <- 1 - ci_level
 
   # Estimated CDF
   F_ma <- function(x) {
@@ -51,19 +60,25 @@ joint_ma_sim <- function(
   ub_boot <- quantile(boot_ests, 1 - alpha / 2)
 
 
+  # Return point estimates, standard error estimates, test statistics, and
+  # 1-alpha% CI bounds
   re <- data.frame(
-    Method = c("SEM", "Saturated", "MA Fixed", "MA Boot"),
-    estimate = c(est_ma$ate_models, rep(est_ma$ate_ma, 2)),
-    se = sqrt(c(est_ma$v_models, v_ma_fixed, v_ma_boot))
+    Method = c("SEM", "Saturated", "MA Fixed", "MA Boot", "MA Boot %Tile"),
+    estimate = c(est_ma$ate_models, rep(est_ma$ate_ma, 3)),
+    se = sqrt(c(est_ma$v_models, v_ma_fixed, rep(v_ma_boot, 2)))
   )
   re$Z <- re$estimate / re$se
   re$lb <- c(
     qnorm(alpha / 2, mean = est_ma$ate_models, sd = sqrt(est_ma$v_models)),
-    lb_fixed, lb_boot
+    lb_fixed,
+    qnorm(alpha / 2, mean = est_ma$ate_ma, sd = sqrt(v_ma_boot)),
+    lb_boot
     )
   re$ub <- c(
     qnorm(1 - alpha / 2, mean = est_ma$ate_models, sd = sqrt(est_ma$v_models)),
-    ub_fixed, ub_boot
+    ub_fixed,
+    qnorm(1 - alpha / 2, mean = est_ma$ate_ma, sd = sqrt(v_ma_boot)),
+    ub_boot
   )
   return(re)
 }
@@ -74,7 +89,7 @@ do_boot_ma <- function(data0, endpoints, categorical, treatment, ...) {
   n <- nrow(data0)
   data_boot <- data0[sample(1:n, size = n, replace = TRUE), ]
 
-  estimate_ma(data_boot, endpoints, categorical, treatment, ...)
+  estimate_ma(data_boot, endpoints, categorical, treatment, sandwich = FALSE)
 }
 
 estimate_ma <- function(data0, endpoints, categorical, treatment,
