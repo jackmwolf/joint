@@ -4,13 +4,16 @@
 \alias{verify_input_joint_sem}
 \title{Verify input to joint_sem()}
 \usage{
-verify_input_joint_sem(data0, endpoints, categorical)
+verify_input_joint_sem(data0, endpoints, categorical, treatment)
 }
 \arguments{
 \item{data0}{Data frame with treatment assignment and endpoints}
 
 \item{categorical}{Character vector of endpoint names to be treated as
 categorical (binary or ordinal) variables}
+
+\item{treatment}{Character name of the column name corresponding to binary
+0-1 treatment indicator.}
 }
 \value{
 TRUE if all input is valid

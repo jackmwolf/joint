@@ -1,4 +1,4 @@
-## FUNCTIONS FOR ESTIMATING JOINT MODELS
+## FUNCTIONS FOR ESTIMATING JOINT MODELS WITH SEM CONSTRAINTS
 
 #' Estimate a joint model using SEM constraints
 #'
@@ -6,9 +6,11 @@
 #' @param endpints Character vector of endpoint names as in \code{data0}
 #' @param categorical Character vector of endpoint names to be treated as
 #'   categorical (binary or ordinal) variables
+#' @param treatment Character name of the column name corresponding to binary
+#'   0-1 treatment indicator.
 #' @param sandwich Logical indicator for whether to return the sandwich variance
 #'   estimator in addition to the model-based estimator.
-#' @param debug Logical indicator to print diagnoistic information
+#' @param debug Logical indicator to print diagnostic information
 #' @param ... additional arguments to [stats::nlm()].
 #'
 #' @return An object of class [joint_sem]
@@ -19,14 +21,19 @@
 #' fit
 #' estimate_effects(fit, risk_difference = "Y3_cat")
 #' @export
-joint_sem <- function(data0, endpoints, categorical = c(), sandwich = FALSE, debug = FALSE, ...) {
+joint_sem <- function(data0, endpoints, categorical = c(), treatment = "A",
+                      sandwich = FALSE, debug = FALSE, ...) {
   t0 <- Sys.time()
 
   if (debug) cat("Verifying input\n")
-  verify_input_joint_sem(data0 = data0, endpoints = endpoints, categorical = categorical)
+  verify_input_joint_sem(
+    data0 = data0, endpoints = endpoints, categorical = categorical,
+    treatment = treatment)
 
   if (debug) cat("Initalizing phi\n")
-  phi_init <- initalize_phi(data0 = data0, endpoints = endpoints, categorical = categorical, ...)
+  phi_init <- initalize_phi(
+    data0 = data0, endpoints = endpoints, categorical = categorical,
+    treatment = treatment, ...)
 
   if (debug) cat("Maximizing log likelihood\n")
   # Parameter estimation ---
@@ -37,6 +44,7 @@ joint_sem <- function(data0, endpoints, categorical = c(), sandwich = FALSE, deb
       data0 = data0,
       endpoints = endpoints,
       categorical = categorical,
+      treatment = treatment,
       .names = names(phi_init),
       p = phi_init,
       hessian = TRUE,
@@ -81,7 +89,8 @@ joint_sem <- function(data0, endpoints, categorical = c(), sandwich = FALSE, deb
   t1 <- Sys.time()
   out <- list(
     estimate = mle$estimate,
-    ll = mle$minimum,
+    ll = -1 * mle$minimum,
+    dim_phi = length(mle$estimate),
     runtime = as.numeric(t1 - t0, units = "secs"),
     endpoints = endpoints,
     categorical = categorical
@@ -97,7 +106,7 @@ joint_sem <- function(data0, endpoints, categorical = c(), sandwich = FALSE, deb
 #' @param gamma Initial value of the gamma parameter, defaults to 2
 #' @return A named vector of initial parameter values for likelihood
 #'   maximization.
-initalize_phi <- function(data0, endpoints, categorical = c(), gamma = 2) {
+initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma = 2) {
   # Initialize parameters ---
   P <- length(endpoints)
   q <- length(categorical)
@@ -119,12 +128,12 @@ initalize_phi <- function(data0, endpoints, categorical = c(), gamma = 2) {
   for (p in 1:length(endpoints)) {
     if (endpoints[p] %in% categorical) {
 
-      nu[p] <- qnorm(1 - mean(data0[data0$A == 0, endpoints[p]] == 0))
-      lambda[p] <- 1/gamma * (1 - mean(data0[data0$A == 1, endpoints[p]] == 0) - nu[p])
+      nu[p] <- qnorm(1 - mean(data0[data0[[treatment]] == 0, endpoints[p]] == 0))
+      lambda[p] <- 1/gamma * (1 - mean(data0[data0[[treatment]] == 1, endpoints[p]] == 0) - nu[p])
 
       if (n_thresholds[endpoints[p]] > 0) {
 
-        cum_props_p <- cumsum(prop.table(table(data0[data0$A == 0, endpoints[p]])))
+        cum_props_p <- cumsum(prop.table(table(data0[data0[[treatment]] == 0, endpoints[p]])))
         a_p <- qnorm(cum_props_p)[2:(length(cum_props_p) - 1)]
         names(a_p) <- paste0("a_", endpoints[p], "_", 1:length(a_p))
         a <- c(a, a_p)
@@ -133,9 +142,9 @@ initalize_phi <- function(data0, endpoints, categorical = c(), gamma = 2) {
 
     } else {
 
-      nu[p] <- mean(data0[data0$A == 0, endpoints[p]])
-      lambda[p] <- 1/gamma * (mean(data0[data0$A == 1, endpoints[p]]) - nu[p])
-      theta_p <- max(var(data0[data0$A == 0, endpoints[p]]) - lambda[p]^2, 0)
+      nu[p] <- mean(data0[data0[[treatment]] == 0, endpoints[p]])
+      lambda[p] <- 1/gamma * (mean(data0[data0[[treatment]] == 1, endpoints[p]]) - nu[p])
+      theta_p <- max(var(data0[data0[[treatment]] == 0, endpoints[p]]) - lambda[p]^2, 0)
       names(theta_p) <- paste0("theta_", endpoints[p])
       theta <- c(theta, theta_p)
 
@@ -163,7 +172,7 @@ initalize_phi <- function(data0, endpoints, categorical = c(), gamma = 2) {
 #' @param .names Optimal vector of names for phi
 #' @inheritParams joint_sem
 #' @return The log likelihood for the input parameters and data
-ll_sem <- function(phi, data0, endpoints, categorical, .names = NULL) {
+ll_sem <- function(phi, data0, endpoints, categorical, treatment, .names = NULL) {
 
   if (!is.null(.names)) names(phi) <- .names
 
@@ -190,7 +199,7 @@ ll_sem <- function(phi, data0, endpoints, categorical, .names = NULL) {
 
   # E(Y, Y*) ---
   mu <- matrix(1, n) %*% matrix(nu, nrow = 1) +
-    as.matrix(data0$A, ncol = 1) %*% matrix(gamma * lambda, nrow = 1)
+    as.matrix(data0[[treatment]], ncol = 1) %*% matrix(gamma * lambda, nrow = 1)
   colnames(mu) <- endpoints
 
   # V(Y) ---
@@ -273,6 +282,8 @@ ll_sem <- function(phi, data0, endpoints, categorical, .names = NULL) {
 #'   difference.
 #' @param sandwich Logical indicator to use the sandwich variance estimator
 #' @inherit joint_sem examples
+#' @return A list of effect estimates and variances
+#' @export
 estimate_effects <- function(model, risk_difference = c(), sandwich = FALSE) {
 
   estimate <- model$estimate
@@ -348,3 +359,4 @@ estimate_effects <- function(model, risk_difference = c(), sandwich = FALSE) {
   )
   return(out)
 }
+
