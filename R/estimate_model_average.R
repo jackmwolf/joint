@@ -39,16 +39,23 @@ joint_ma_sim <- function(
   }
 
   # Estimate %tile CI from CDF
-  lb_fixed <- uniroot(
-    f = function(x) F_ma(x) - alpha / 2,
-    interval = est_ma$ate_ma + c(-5, 5) * sqrt(v_ma_fixed),
-    extendInt = "yes"
-    )$root
-  ub_fixed <- uniroot(
-    f = function(x) F_ma(x) - (1 - alpha / 2),
-    interval = est_ma$ate_ma + c(-5, 5) * sqrt(v_ma_fixed),
-    extendInt = "yes"
-  )$root
+  lb_fixed <- tryCatch(
+    uniroot(
+      f = function(x) F_ma(x) - alpha / 2,
+      interval = est_ma$ate_ma + c(-5, 5) * sqrt(v_ma_fixed),
+      extendInt = "upX"
+    )$root,
+    error = function(err) NA
+  )
+
+  ub_fixed <- tryCatch(
+    uniroot(
+      f = function(x) F_ma(x) - (1 - alpha / 2),
+      interval = est_ma$ate_ma + c(-5, 5) * sqrt(v_ma_fixed),
+      extendInt = "upX"
+    )$root,
+    error = function(err) NA
+  )
 
 
   # Estimate sampling distribution via bootstrap
