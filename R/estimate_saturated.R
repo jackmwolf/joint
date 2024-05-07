@@ -177,6 +177,7 @@ ll_cat_saturated <- function(phi, data0, endpoints, categorical, treatment, cont
 
   P <- length(endpoints)
   q <- length(categorical)
+  n <- nrow(data0)
 
   # V(Y) ---
   Sigma[upper.tri(Sigma)][-c(1:((P - q) * (P - q - 1)/2))] <- phi

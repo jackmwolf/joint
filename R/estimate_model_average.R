@@ -16,12 +16,11 @@
 #' @export
 joint_ma_sim <- function(
     data0, endpoints, categorical = c(), treatment = "A", n_boot = 100,
-    ci_level = 0.95, ...) {
-
+    ci_level = 0.95, sandwich = FALSE, ...) {
 
   est_ma <- estimate_ma(
     data0 = data0, endpoints = endpoints, categorical = categorical,
-    treatment = treatment, ...)
+    treatment = treatment, sandwich = sandwich, ...)
 
   # Estimate sampling distribution of ma estimator treating weights as fixed
   v_ma_fixed <- drop(est_ma$omega %*% (est_ma$ate_ma^2 + est_ma$v_models)) -
@@ -92,7 +91,6 @@ joint_ma_sim <- function(
   return(re)
 }
 
-
 do_boot_ma <- function(data0, endpoints, categorical, treatment, ...) {
 
   n <- nrow(data0)
@@ -101,12 +99,12 @@ do_boot_ma <- function(data0, endpoints, categorical, treatment, ...) {
   estimate_ma(data_boot, endpoints, categorical, treatment, sandwich = FALSE)
 }
 
-estimate_ma <- function(data0, endpoints, categorical, treatment,
+estimate_ma <- function(data0, endpoints, categorical, treatment, sandwich,
                         ...) {
   # Estimate SEM and saturated model
   est_sem <- joint_sem(
     data0 = data0, endpoints = endpoints, categorical = categorical,
-    treatment = treatment, ...
+    treatment = treatment, sandwich = sandwich, ...
   )
 
   est_saturated <- joint_saturated(
@@ -114,8 +112,9 @@ estimate_ma <- function(data0, endpoints, categorical, treatment,
     treatment = treatment, ...
   )
 
+
   # Estimate effects
-  xyz_sem <- estimate_effects(est_sem)
+  xyz_sem <- estimate_effects(est_sem, sandwich = sandwich)
   ate_sem <- unname(xyz_sem$estimate[endpoints[1]])
   v_sem  <- unname(diag(xyz_sem$vcov)[endpoints[1]])
 
@@ -127,13 +126,13 @@ estimate_ma <- function(data0, endpoints, categorical, treatment,
   lls <- c(est_sem$ll, est_saturated$ll)
 
   # Number of parameters
-  pk <- c(length(est_sem$estimate), est_saturated$dim_phi)
+  pk <- c(est_sem$dim_phi, est_saturated$dim_phi)
 
   # BICs
   bics <- -2 * lls + pk * log(nrow(data0))
 
   # Weights
-  omega <- exp(-1/2 * (bics - min(bics)))/sum(exp(-1/2 * (bics - min(bics))))
+  omega <- exp(-1/2 * (bics - min(bics))) / sum(exp(-1/2 * (bics - min(bics))))
   ate_ma <- drop(omega %*% c(ate_sem, ate_saturated))
 
   list(

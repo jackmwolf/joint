@@ -74,6 +74,7 @@ joint_sem <- function(data0, endpoints, categorical = c(), treatment = "A",
         data0 = .x,
         endpoints = endpoints,
         categorical = categorical,
+        treatment = treatment,
         .names = names(phi_init)
       )
     )
@@ -81,7 +82,7 @@ joint_sem <- function(data0, endpoints, categorical = c(), treatment = "A",
     GtG <- Gi %*% t(Gi)
     V_sand <- H_inv %*% GtG %*% H_inv
     dimnames(V_sand) <- dimnames(V_model)
-    V_out$vcov_sandwhich <- V_sand
+    V_out$vcov_sandwich <- V_sand
   }
 
   # Output ---
