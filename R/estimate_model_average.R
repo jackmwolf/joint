@@ -88,6 +88,7 @@ joint_ma_sim <- function(
     qnorm(1 - alpha / 2, mean = est_ma$ate_ma, sd = sqrt(v_ma_boot)),
     ub_boot
   )
+  re$ll <- c(est_ma$lls, rep(NA, nrow(re) - 2))
   return(re)
 }
 
@@ -124,6 +125,8 @@ estimate_ma <- function(data0, endpoints, categorical, treatment, sandwich,
 
   # log likelihoods
   lls <- c(est_sem$ll, est_saturated$ll)
+  names(lls) <- c("sem", "saturated")
+
 
   # Number of parameters
   pk <- c(est_sem$dim_phi, est_saturated$dim_phi)
@@ -139,6 +142,7 @@ estimate_ma <- function(data0, endpoints, categorical, treatment, sandwich,
     ate_ma = ate_ma,
     ate_models = c(sem = ate_sem, saturated = ate_saturated),
     v_models = c(sem = v_sem, saturated = v_saturated),
-    omega = omega
+    omega = omega,
+    lls = lls
   )
 }
