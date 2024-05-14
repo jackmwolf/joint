@@ -1,17 +1,21 @@
 Package: joint
 Type: Package
 Title: Fit Joint Endpoint Models to Efficiently Estimate Treatment Effects
-Version: 0.1.0
+Version: 0.2.0.9000
 Authors@R: 
     person(given = "Jack",
            family = "Wolf",
            role = c("aut", "cre"),
            email = "jackwolf910@gmail.com",
            comment = c(ORCID = "0000-0002-8919-8740"))
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Maintainer: Jack M Wolf <jackwolf910@gmail.com>
+Description: Efficiently estimate the average treatment effect by gaining 
+    efficiency from secondary endpoints. Two joint models are fit for the 
+    primary and secondary endpoints. One is saturated while the other uses
+    structural equation modeling constaints to gain efficiency. Model averaging
+    protects against bias from structural equation modeling under 
+    misspecification.
+License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Depends: 
