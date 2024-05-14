@@ -159,9 +159,10 @@ estimate_ma <- function(data0, endpoints, categorical, treatment, sandwich,
 #' Estimate the ATE using model averaging
 #'
 #' @inheritParams joint_sem
+#' @param Primary Name of the primary endpoint
 #' @return A list with point estimates using SL and BIC model averaging,
 #'   sub-model estimates, and weights.
-estimate_ma_2 <- function(data0, endpoints, categorical, treatment = "A", sandwich = FALSE,
+estimate_ma_2 <- function(data0, endpoints, categorical, treatment = "A", primary, sandwich = FALSE,
                         ...) {
   # Estimate SEM and saturated model
   est_sem <- joint_sem(
@@ -232,11 +233,12 @@ estimate_ma_2 <- function(data0, endpoints, categorical, treatment = "A", sandwi
 #' Estimate the ATE with various methods for simulation studies
 #'
 #' @inheritParams joint_sem
+#' @inheritParams estimate_ma_2
 #' @return A data.frame with point estimates for various methods
 #' @examples
 #' data(joint_example)
 #' joint_ma_sim(joint_example, c("Y1", "Y2", "Y3"), n_boot = 5)
-#' @examples
+#'  @examples
 #'   data(joint_example)
 #'   estimate_ma_2(
 #'     joint_example,
@@ -246,7 +248,7 @@ estimate_ma_2 <- function(data0, endpoints, categorical, treatment = "A", sandwi
 #'    )
 #' @export
 joint_ma_sim_2 <- function(
-    data0, endpoints, categorical = c(), treatment = "A", sandwich = FALSE,
+    data0, endpoints, categorical = c(), treatment = "A", primary, sandwich = FALSE,
     ...) {
 
 

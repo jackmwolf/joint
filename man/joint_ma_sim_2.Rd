@@ -9,6 +9,7 @@ joint_ma_sim_2(
   endpoints,
   categorical = c(),
   treatment = "A",
+  primary,
   sandwich = FALSE,
   ...
 )
@@ -36,6 +37,7 @@ Estimate the ATE with various methods for simulation studies
 \examples{
 data(joint_example)
 joint_ma_sim(joint_example, c("Y1", "Y2", "Y3"), n_boot = 5)
+ @examples
   data(joint_example)
   estimate_ma_2(
     joint_example,

@@ -9,6 +9,7 @@ estimate_ma_2(
   endpoints,
   categorical,
   treatment = "A",
+  primary,
   sandwich = FALSE,
   ...
 )
@@ -26,6 +27,8 @@ categorical (binary or ordinal) variables}
 estimator in addition to the model-based estimator.}
 
 \item{...}{additional arguments to [stats::nlm()].}
+
+\item{Primary}{Name of the primary endpoint}
 }
 \value{
 A list with point estimates using SL and BIC model averaging,
