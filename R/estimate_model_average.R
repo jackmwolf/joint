@@ -92,6 +92,10 @@ joint_ma_sim <- function(
   return(re)
 }
 
+#' Estimate the model averaged ATE on one bootstrap sample
+#'
+#' @inheritParams joint_sem
+#' @inherit estimate_ma return
 do_boot_ma <- function(data0, endpoints, categorical, treatment, ...) {
 
   n <- nrow(data0)
@@ -100,6 +104,11 @@ do_boot_ma <- function(data0, endpoints, categorical, treatment, ...) {
   estimate_ma(data_boot, endpoints, categorical, treatment, sandwich = FALSE)
 }
 
+#' Estimate the ATE using model averaging
+#'
+#' @inheritParams joint_sem
+#' @return A list with point estimates using BIC model averagin and
+#'   sub-model estimates, SE estimates, and weights,
 estimate_ma <- function(data0, endpoints, categorical, treatment, sandwich,
                         ...) {
   # Estimate SEM and saturated model
@@ -145,4 +154,111 @@ estimate_ma <- function(data0, endpoints, categorical, treatment, sandwich,
     omega = omega,
     lls = lls
   )
+}
+
+#' Estimate the ATE using model averaging
+#'
+#' @inheritParams joint_sem
+#' @return A list with point estimates using SL and BIC model averaging,
+#'   sub-model estimates, and weights.
+estimate_ma_2 <- function(data0, endpoints, categorical, treatment = "A", sandwich = FALSE,
+                        ...) {
+  # Estimate SEM and saturated model
+  est_sem <- joint_sem(
+    data0 = data0, endpoints = endpoints, categorical = categorical,
+    treatment = treatment, sandwich = sandwich, ...
+  )
+
+  est_saturated <- joint_saturated(
+    data0 = data0, endpoints = endpoints, categorical = categorical,
+    treatment = treatment, ...
+  )
+
+
+  # Estimate effects
+  xyz_sem <- estimate_effects(est_sem, sandwich = sandwich)
+  ate_sem <- unname(xyz_sem$estimate[endpoints[1]])
+  v_sem  <- unname(diag(xyz_sem$vcov)[endpoints[1]])
+
+  xyz_saturated <- lm(data0[[endpoints[1]]] ~ data0[[treatment]])
+  ate_saturated <- unname(coef(xyz_saturated)[2])
+  v_saturated <- unname(vcov(xyz_saturated)[2, 2])
+
+  # log likelihoods
+  lls <- c(est_sem$ll, est_saturated$ll)
+  names(lls) <- c("sem", "saturated")
+
+  # Number of parameters
+  pk <- c(est_sem$dim_phi, est_saturated$dim_phi)
+
+  # BICs
+  bics <- -2 * lls + pk * log(nrow(data0))
+
+  # Super Learning
+  secondary <- endpoints[endpoints != primary]
+
+  # Set up Super Learning
+  task <- sl3::make_sl3_Task(
+    data = data0,
+    outcome = primary,
+    covariates = c(secondary, "A")
+  )
+
+  lrnr_sem <- Lrnr_sem$new(categorical = categorical, ...)
+  lrnr_saturated <- sl3::Lrnr_glm$new(covariates = treatment)
+
+  stack <- sl3::Stack$new(lrnr_sem, lrnr_saturated)
+
+  sl <- sl3::Lrnr_sl$new(learners = stack)
+  sl_fit <- sl$train(task = task)
+
+  # Weights
+  omega_bic <- exp(-1/2 * (bics - min(bics))) / sum(exp(-1/2 * (bics - min(bics))))
+  ate_ma_bic <- drop(omega_bic %*% c(ate_sem, ate_saturated))
+  omega_sl <- sl_fit$coefficients
+  ate_ma_sl <- drop(omega_sl %*% c(ate_sem, ate_saturated))
+
+  list(
+    ate_ma_bic = ate_ma_bic,
+    ate_ma_sl = ate_ma_sl,
+    ate_models = c(sem = ate_sem, saturated = ate_saturated),
+    v_models = c(sem = v_sem, saturated = v_saturated),
+    omega_bic = omega_bic,
+    omega_sl = omega_sl,
+    lls = lls
+  )
+}
+
+#' Estimate the ATE with various methods for simulation studies
+#'
+#' @inheritParams joint_sem
+#' @return A data.frame with point estimates for various methods
+#' @examples
+#' data(joint_example)
+#' joint_ma_sim(joint_example, c("Y1", "Y2", "Y3"), n_boot = 5)
+#' @examples
+#'   data(joint_example)
+#'   estimate_ma_2(
+#'     joint_example,
+#'     endpoints = c("Y1", "Y2", "Y3"),
+#'     categorical = c(),
+#'     treatment = "A"
+#'    )
+#' @export
+joint_ma_sim_2 <- function(
+    data0, endpoints, categorical = c(), treatment = "A", sandwich = FALSE,
+    ...) {
+
+
+  estimate <- estimate_ma_2(data0, endpoints, categorical, treatment, sandwich, ...)
+
+  re <- data.frame(
+    Method = c("SEM", "Saturated", "MA BIC", "MA SL"),
+    estimate = c(estimate$ate_models, estimate$ate_ma_bic, estimate$ate_ma_sl),
+    omega_bic = c(estimate$omega_bic, NA, NA),
+    omega_sl  = c(estimate$omega_sl, NA, NA),
+    ll = c(estimate$lls, NA, NA)
+  )
+
+  return(re)
 }
