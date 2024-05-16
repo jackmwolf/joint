@@ -70,9 +70,9 @@ Lrnr_sem <- R6::R6Class(
   public = list(
     # you can define default parameter values here
     # if possible, your learner should define defaults for all required parameters
-    initialize = function(...) {
-      super$initialize(params = sl3:::args_to_list(), ...)
-    }
+    # initialize = function(...) {
+    #   super$initialize(params = sl3:::args_to_list(), ...)
+    # }
   ),
 
   private = list(

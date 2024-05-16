@@ -32,7 +32,6 @@ Learner object with methods for training and prediction.
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-Lrnr_sem-new}{\code{Lrnr_sem$new()}}
 \item \href{#method-Lrnr_sem-clone}{\code{Lrnr_sem$clone()}}
 }
 }
@@ -47,6 +46,7 @@ Learner object with methods for training and prediction.
 <li><span class="pkg-link" data-pkg="sl3" data-topic="Lrnr_base" data-id="custom_chain"><a href='../../sl3/html/Lrnr_base.html#method-Lrnr_base-custom_chain'><code>sl3::Lrnr_base$custom_chain()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="sl3" data-topic="Lrnr_base" data-id="get_outcome_range"><a href='../../sl3/html/Lrnr_base.html#method-Lrnr_base-get_outcome_range'><code>sl3::Lrnr_base$get_outcome_range()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="sl3" data-topic="Lrnr_base" data-id="get_outcome_type"><a href='../../sl3/html/Lrnr_base.html#method-Lrnr_base-get_outcome_type'><code>sl3::Lrnr_base$get_outcome_type()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="sl3" data-topic="Lrnr_base" data-id="initialize"><a href='../../sl3/html/Lrnr_base.html#method-Lrnr_base-initialize'><code>sl3::Lrnr_base$initialize()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="sl3" data-topic="Lrnr_base" data-id="predict"><a href='../../sl3/html/Lrnr_base.html#method-Lrnr_base-predict'><code>sl3::Lrnr_base$predict()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="sl3" data-topic="Lrnr_base" data-id="predict_fold"><a href='../../sl3/html/Lrnr_base.html#method-Lrnr_base-predict_fold'><code>sl3::Lrnr_base$predict_fold()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="sl3" data-topic="Lrnr_base" data-id="print"><a href='../../sl3/html/Lrnr_base.html#method-Lrnr_base-print'><code>sl3::Lrnr_base$print()</code></a></span></li>
@@ -61,15 +61,6 @@ Learner object with methods for training and prediction.
 </ul>
 </details>
 }}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Lrnr_sem-new"></a>}}
-\if{latex}{\out{\hypertarget{method-Lrnr_sem-new}{}}}
-\subsection{Method \code{new()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Lrnr_sem$new(...)}\if{html}{\out{</div>}}
-}
-
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Lrnr_sem-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-Lrnr_sem-clone}{}}}
