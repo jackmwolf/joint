@@ -59,6 +59,65 @@ joint_ma_sim_3 <- function(
   return(re)
 }
 
+#' Estimate the ATE with various methods for simulation studies
+#'
+#' @inheritParams joint_sem
+#' @param n_boot Number of bootstrap replications to perform
+#' @param ci_level The confidence level required
+#' @return A data.frame with point estimates, standard error estimates, and
+#'   bootstrapped percentile confidence interval bounds
+#' @examples
+#' data(joint_example)
+#' # Using n_boot = 5 for example purposes only, use more bootstrap iterations
+#' # in practice!
+#' joint_ma_sim_4(
+#'   data0 = joint_example, endpoints = c("Y1", "Y2", "Y3_cat"), treatment = "A",
+#'   primary = "Y3_cat", n_boot = 0)
+#'
+#' @export
+joint_ma_sim_4 <- function(
+    data0, endpoints, categorical = c(), treatment = "A", primary, n_boot = 100,
+    ci_level = 0.95, sandwich = FALSE, ...) {
+
+  # Estimates on data0
+  estimate <- estimate_ma_4(data0, endpoints, categorical, treatment, primary)
+
+  # Bootstrapping
+  n <- nrow(data0)
+  boot_results <- as.data.frame(t(replicate(
+    n_boot,
+    expr = {
+      data_boot <- data0[sample(1:n, size = n, replace = TRUE), ]
+      estimate_ma_4(data_boot, endpoints, categorical, treatment, primary)
+    }
+  )))
+
+  # Results
+  re <- data.frame(
+    Method = c("SEM", "Saturated", "SL", "BIC"),
+    Estimate = estimate[c("est_sem", "est_saturated", "est_sl", "est_bic")],
+    se = sqrt(c(estimate[c("v_sem", "v_saturated")], NA, NA)),
+    se_boot = c(sd(boot_results$est_sem), sd(boot_results$est_saturated),
+                sd(boot_results$est_sl), sd(boot_results$est_bic)),
+    lb_boot = c(
+      quantile(boot_results$est_sem, (1 - ci_level) / 2),
+      quantile(boot_results$est_saturated, (1 - ci_level) / 2),
+      quantile(boot_results$est_sl, (1 - ci_level) / 2),
+      quantile(boot_results$est_bic, (1 - ci_level) / 2)
+    ),
+    ub_boot = c(
+      quantile(boot_results$est_sem, (1 + ci_level) / 2),
+      quantile(boot_results$est_saturated, (1 + ci_level) / 2),
+      quantile(boot_results$est_sl, (1 + ci_level) / 2),
+      quantile(boot_results$est_bic, (1 + ci_level) / 2)
+    ),
+    Omega = c(NA, NA, estimate[c("omega_sl", "omega_bic")])
+  )
+  rownames(re) <- NULL
+
+  return(re)
+}
+
 estimate_ma_3 <- function(
     data0, endpoints, categorical = c(), treatment = "A", primary, n_boot = 100,
     ci_level = 0.95, sandwich = FALSE, ...) {
@@ -86,6 +145,83 @@ estimate_ma_3 <- function(
   xyz_sem <- estimate_effects(est_sem, sandwich = sandwich)
   ate_sem <- unname(xyz_sem$estimate[primary])
   v_sem  <- unname(diag(xyz_sem$vcov)[primary])
+
+  # Fit saturated model
+  est_saturated <- joint_saturated(
+    data0 = data0, endpoints = endpoints, categorical = categorical,
+    treatment = treatment, ...
+  )
+  xyz_saturated <- lm(data0[[primary]] ~ data0[[treatment]])
+  ate_saturated <- unname(coef(xyz_saturated)[2])
+  v_saturated <- unname(vcov(xyz_saturated)[2, 2])
+
+  # BIC Weights ---
+  # log likelihoods
+  lls <- c(est_sem$ll, est_saturated$ll)
+  names(lls) <- c("sem", "saturated")
+
+  # Number of parameters
+  pk <- c(est_sem$dim_phi, est_saturated$dim_phi)
+
+  # BICs
+  bics <- -2 * lls + pk * log(nrow(data0))
+
+  # Weights
+  omega_bic <- exp(-1/2 * (bics - min(bics))) / sum(exp(-1/2 * (bics - min(bics))))
+  ate_ma_bic <- drop(omega_bic %*% c(ate_sem, ate_saturated))
+  omega_sl <- sl_fit$coefficients
+  ate_ma_sl <- drop(omega_sl %*% c(ate_sem, ate_saturated))
+
+  # Return point estimates, sub-model variance estimates, and weights
+  c(
+    est_sl        = ate_ma_sl,
+    est_bic       = ate_ma_bic,
+    est_sem       = ate_sem,
+    est_saturated = ate_saturated,
+
+    omega_sl  = unname(omega_sl[1]),
+    omega_bic = unname(omega_bic[1]),
+
+    v_sem       = v_sem,
+    v_saturated = v_saturated
+  )
+
+}
+
+estimate_ma_4 <- function(
+    data0, endpoints, categorical = c(), treatment = "A", primary, n_boot = 100,
+    ci_level = 0.95, sandwich = FALSE, ...) {
+
+  # Initialize super learning
+  secondary <- endpoints[endpoints != primary]
+  task <- sl3::make_sl3_Task(
+    data = data0,
+    outcome = primary,
+    covariates = c(secondary, "A")
+  )
+
+  lrnr_sem <- Lrnr_sem$new(categorical = categorical, ...)
+  lrnr_saturated <- sl3::Lrnr_glm$new(covariates = treatment)
+
+  stack <- sl3::Stack$new(lrnr_sem, lrnr_saturated)
+
+  # Fit Super Learner and sub models
+  sl <- sl3::Lrnr_sl$new(learners = stack)
+  sl_fit <- sl$train(task = task)
+
+  # Sub-models ---
+  # Extract joint_sem() model from sl_fit
+  est_sem <- sl_fit$learner_fits[[1]]$fit_object
+  xyz_sem <- estimate_effects(est_sem, sandwich = sandwich, risk_difference = categorical)
+
+  if (primary %in% categorical) {
+    ate_sem <- unname(xyz_sem$estimate[paste0(primary, "_RD")])
+    v_sem  <- unname(diag(xyz_sem$vcov)[paste0(primary, "_RD")])
+  } else {
+    ate_sem <- unname(xyz_sem$estimate[paste0(primary)])
+    v_sem  <- unname(diag(xyz_sem$vcov)[paste0(primary)])
+  }
+
 
   # Fit saturated model
   est_saturated <- joint_saturated(
