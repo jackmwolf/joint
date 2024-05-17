@@ -172,6 +172,7 @@ joint_saturated <- function(data0, endpoints, categorical = c(),
 #' @param Sigma Matrix of endpoint covariances. Some entries are overwritten by
 #'   `phi` before likelihood calculation.
 #' @inheritParams joint_saturated
+#' @importFrom MASS ginv
 #' @return The log likelihood for the input parameters and data
 ll_cat_saturated <- function(phi, data0, endpoints, categorical, treatment, continuous, lb, ub, mu, Sigma) {
 
@@ -183,27 +184,27 @@ ll_cat_saturated <- function(phi, data0, endpoints, categorical, treatment, cont
   Sigma[upper.tri(Sigma)][-c(1:((P - q) * (P - q - 1)/2))] <- phi
   Sigma[lower.tri(Sigma)] <- t(Sigma)[lower.tri(Sigma)]
 
-
   colnames(Sigma) <- rownames(Sigma) <- endpoints
-  if (any(eigen(Sigma)$values <= 0)) return(Inf)
-
 
   ## Categorical endpoints ===
   if (P - q > 0) {
+
+    inv_V22 <- MASS::ginv(Sigma[continuous, continuous, drop = FALSE])
 
     # conditional expectation
     E <- data0[, continuous, drop = FALSE] - mu[, continuous, drop = FALSE]
     c_e <- mu[, categorical, drop = FALSE] +
       t(Sigma[categorical, continuous, drop = FALSE] %*%
-          solve(Sigma[continuous, continuous, drop = FALSE]) %*%
+          inv_V22 %*%
           t(E)
       )
 
     # conditional variance
     c_v <- Sigma[categorical, categorical, drop = FALSE] -
       Sigma[categorical, continuous, drop = FALSE] %*%
-      solve(Sigma[continuous, continuous, drop = FALSE]) %*%
+      inv_V22 %*%
       Sigma[continuous, categorical, drop = FALSE]
+
   } else {
     c_e <- mu[, categorical, drop = FALSE]
     cv <- Sigma[categorical, categorical, drop = FALSE]
