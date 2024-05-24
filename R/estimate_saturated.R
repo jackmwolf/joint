@@ -152,6 +152,12 @@ joint_saturated <- function(data0, endpoints, categorical = c(),
     endpoints = endpoints,
     categorical = categorical
   )
+
+  if (q > 0) {
+    out$nlm_code <- mle$code
+    out$nlm_iterations <- mle$iterations
+  }
+
   return(out)
 
 }

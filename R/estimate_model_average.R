@@ -66,6 +66,7 @@ joint_ma_sim_3 <- function(
 #' @param ci_level The confidence level required
 #' @return A data.frame with point estimates, standard error estimates, and
 #'   bootstrapped percentile confidence interval bounds
+#' @import sl3
 #' @examples
 #' data(joint_example)
 #' # Using n_boot = 5 for example purposes only, use more bootstrap iterations
@@ -111,7 +112,21 @@ joint_ma_sim_4 <- function(
       quantile(boot_results$est_sl, (1 + ci_level) / 2),
       quantile(boot_results$est_bic, (1 + ci_level) / 2)
     ),
-    Omega = c(NA, NA, estimate[c("omega_sl", "omega_bic")])
+    Omega = c(NA, NA, estimate[c("omega_sl", "omega_bic")]),
+    iterations = c(
+      estimate[c("nlm_iterations_sem", "nlm_iterations_saturated")],
+      NA,
+      NA),
+    max_iterations_boot = c(
+      max(boot_results$nlm_iterations_sem),
+      max(boot_results$nlm_iterations_saturated),
+      NA,
+      NA
+    ),
+    nlm_code =c(
+      estimate[c("nlm_code_sem", "nlm_code_saturated")],
+      NA,
+      NA)
   )
   rownames(re) <- NULL
 
@@ -206,7 +221,12 @@ estimate_ma_4 <- function(
   stack <- sl3::Stack$new(lrnr_sem, lrnr_saturated)
 
   # Fit Super Learner and sub models
-  sl <- sl3::Lrnr_sl$new(learners = stack)
+  metalearner <- sl3::make_learner(
+    sl3::Lrnr_solnp,
+    eval_function = sl3::loss_squared_error,
+    learner_function = sl3::metalearner_linear
+    )
+  sl <- sl3::Lrnr_sl$new(learners = stack, metalearner = metalearner)
   sl_fit <- sl$train(task = task)
 
   # Sub-models ---
@@ -260,7 +280,13 @@ estimate_ma_4 <- function(
     omega_bic = unname(omega_bic[1]),
 
     v_sem       = v_sem,
-    v_saturated = v_saturated
+    v_saturated = v_saturated,
+
+    nlm_code_sem = est_sem$nlm_code,
+    nlm_iterations_sem = est_sem$nlm_iterations,
+
+    nlm_code_saturated = est_saturated$nlm_code,
+    nlm_iterations_saturated = est_saturated$nlm_iterations
   )
 
 }

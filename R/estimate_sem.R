@@ -94,7 +94,9 @@ joint_sem <- function(data0, endpoints, categorical = c(), treatment = "A",
     dim_phi = length(mle$estimate),
     runtime = as.numeric(t1 - t0, units = "secs"),
     endpoints = endpoints,
-    categorical = categorical
+    categorical = categorical,
+    nlm_code = mle$code,
+    nlm_iterations = mle$iterations
   )
   out <- append(out, V_out)
   class(out) <- "joint_sem"
