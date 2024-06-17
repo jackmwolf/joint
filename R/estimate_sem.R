@@ -11,6 +11,7 @@
 #' @param sandwich Logical indicator for whether to return the sandwich variance
 #'   estimator in addition to the model-based estimator.
 #' @param debug Logical indicator to print diagnostic information
+#' @param phi_init Optional. Vector of initial parameter values for estimation.
 #' @param ... additional arguments to [stats::nlm()].
 #'
 #' @return An object of class [joint_sem]
@@ -22,7 +23,8 @@
 #' estimate_effects(fit, risk_difference = "Y3_cat")
 #' @export
 joint_sem <- function(data0, endpoints, categorical = c(), treatment = "A",
-                      sandwich = FALSE, debug = FALSE, ...) {
+                      sandwich = FALSE, debug = FALSE,
+                      phi_init = NULL, ...) {
   t0 <- Sys.time()
 
   if (debug) cat("Verifying input\n")
@@ -30,17 +32,29 @@ joint_sem <- function(data0, endpoints, categorical = c(), treatment = "A",
     data0 = data0, endpoints = endpoints, categorical = categorical,
     treatment = treatment)
 
-  if (debug) cat("Initalizing phi\n")
-  phi_init <- initalize_phi(
-    data0 = data0, endpoints = endpoints, categorical = categorical,
-    treatment = treatment, ...)
+  if (is.null(phi_init)) {
+    if (debug) cat("Initalizing phi\n")
+    phi_init <- initalize_phi(
+      data0 = data0, endpoints = endpoints, categorical = categorical,
+      treatment = treatment)
+  } else {
+    names(phi_init) <- names(
+      initalize_phi(
+        data0 = data0, endpoints = endpoints, categorical = categorical,
+        treatment = treatment)
+    )
+  }
+  if (debug) cat(paste0("phi_init = ", print(phi_init, digits = 2)))
 
   if (debug) cat("Maximizing log likelihood\n")
   # Parameter estimation ---
+
   # Maximize -1 * log likelihood using nlm
   suppressWarnings({
     mle <- nlm(
-      f = function(.x, ...) -1 * ll_sem(.x, ...),
+      f = function(.x, data0, endpoints, categorical, treatment, .names) {
+        -1 * ll_sem(.x, data0, endpoints, categorical, treatment, .names)
+      },
       data0 = data0,
       endpoints = endpoints,
       categorical = categorical,
@@ -94,11 +108,17 @@ joint_sem <- function(data0, endpoints, categorical = c(), treatment = "A",
     dim_phi = length(mle$estimate),
     runtime = as.numeric(t1 - t0, units = "secs"),
     endpoints = endpoints,
-    categorical = categorical,
+    categorical = categorical
+  )
+
+  out <- append(out, V_out)
+
+  nlm_diagnostic <- list(
     nlm_code = mle$code,
     nlm_iterations = mle$iterations
   )
-  out <- append(out, V_out)
+  out <- append(out, nlm_diagnostic)
+
   class(out) <- "joint_sem"
   return(out)
 }
@@ -124,7 +144,7 @@ initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma 
 
   nu <- vector(mode = "double", length = P)
   lambda <- vector(mode = "double", length = P)
-  theta <- vector(mode = "double", length = 0)
+  logtheta <- vector(mode = "double", length = 0)
   a <- vector(mode = "double", length = 0)
 
 
@@ -147,9 +167,9 @@ initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma 
 
       nu[p] <- mean(data0[data0[[treatment]] == 0, endpoints[p]])
       lambda[p] <- 1/gamma * (mean(data0[data0[[treatment]] == 1, endpoints[p]]) - nu[p])
-      theta_p <- max(var(data0[data0[[treatment]] == 0, endpoints[p]]) - lambda[p]^2, 0)
-      names(theta_p) <- paste0("theta_", endpoints[p])
-      theta <- c(theta, theta_p)
+      logtheta_p <- max(var(data0[data0[[treatment]] == 0, endpoints[p]]) - lambda[p]^2, 0)
+      names(logtheta_p) <- paste0("logtheta_", endpoints[p])
+      logtheta <- c(logtheta, logtheta_p)
 
     }
 
@@ -161,7 +181,7 @@ initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma 
     gamma,
     nu,
     lambda,
-    theta,
+    logtheta,
     a
   )
 
@@ -193,10 +213,12 @@ ll_sem <- function(phi, data0, endpoints, categorical, treatment, .names = NULL)
     if (endpoints[p] %in% categorical) {
       theta[p] <- 1
     } else {
-      theta[p] <- phi[paste0("theta_", endpoints[p])]
+      theta[p] <- exp(phi[paste0("logtheta_", endpoints[p])])
     }
   }
   names(theta) <- paste0("theta_", endpoints)
+
+  # if (any(theta < 0)) return(Inf)
 
   n <- nrow(data0)
 
@@ -216,8 +238,17 @@ ll_sem <- function(phi, data0, endpoints, categorical, treatment, .names = NULL)
     E <- data0[, continuous, drop = FALSE] - mu[, continuous, drop = FALSE]
     V <- Sigma[continuous, continuous, drop = FALSE]
 
-    ll_continuous <- mvnfast::dmvn(X = as.matrix(E), mu = rep(0, ncol(E)), sigma = V,
-                                   log = TRUE)
+    ll_continuous <- tryCatch(
+      expr = {
+        mvnfast::dmvn(X = as.matrix(E), mu = rep(0, ncol(E)), sigma = V,
+                      log = TRUE)
+      },
+      error = function(e) {
+        # message("Error: ", e$message)
+        NA
+      }
+    )
+
   } else {
     ll_continuous <- rep(0, n)
   }
@@ -231,15 +262,16 @@ ll_sem <- function(phi, data0, endpoints, categorical, treatment, .names = NULL)
       # print(Sigma[categorical, categorical, drop = FALSE])
       c_e <- mu[, categorical, drop = FALSE] +
         t(Sigma[categorical, continuous, drop = FALSE] %*%
-            solve(Sigma[continuous, continuous, drop = FALSE]) %*%
+            ginv(Sigma[continuous, continuous, drop = FALSE]) %*%
             t(E)
         )
 
       # conditional variance
       c_v <- Sigma[categorical, categorical, drop = FALSE] -
         Sigma[categorical, continuous, drop = FALSE] %*%
-        solve(V[continuous, continuous, drop = FALSE]) %*%
+        ginv(V[continuous, continuous, drop = FALSE]) %*%
         Sigma[continuous, categorical, drop = FALSE]
+
     } else {
       c_e <- mu[, categorical, drop = FALSE]
       cv <- Sigma[categorical, categorical, drop = FALSE]
@@ -359,6 +391,39 @@ estimate_effects <- function(model, risk_difference = c(), sandwich = FALSE) {
   out <- list(
     estimate = ests,
     vcov = v_est
+  )
+  return(out)
+}
+
+estimate_marginal <- function(model) {
+
+  estimate <- model$estimate
+  endpoints <- model$endpoints
+
+  gamma <- estimate["gamma"]
+  nu <- estimate[paste0("nu_", endpoints)]
+  lambda <- estimate[paste0("lambda_", endpoints)]
+
+  theta <- rep(1, length = length(endpoints))
+  names(theta) <- paste0("theta_", endpoints)
+
+  for (y in endpoints) {
+    if (paste0("logtheta_", y) %in% names(estimate)) {
+      theta[paste0("theta_", y)] <- exp(estimate[paste0("logtheta_", y)])
+    }
+  }
+
+  mu0 <- nu
+  mu1 <- nu + gamma * lambda
+
+  names(mu0) <- names(mu1) <- endpoints
+
+  V <- lambda %*% t(lambda) + diag(theta)
+
+  out <- list(
+    mu0 = mu0,
+    mu1 = mu1,
+    V = V
   )
   return(out)
 }
