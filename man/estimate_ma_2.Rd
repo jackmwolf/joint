@@ -17,18 +17,20 @@ estimate_ma_2(
 \arguments{
 \item{data0}{Data frame with treatment assignment and endpoints}
 
+\item{endpoints}{Character vector of endpoint names as in \code{data0}}
+
 \item{categorical}{Character vector of endpoint names to be treated as
 categorical (binary or ordinal) variables}
 
 \item{treatment}{Character name of the column name corresponding to binary
 0-1 treatment indicator.}
 
+\item{primary}{Name of the primary endpoint}
+
 \item{sandwich}{Logical indicator for whether to return the sandwich variance
 estimator in addition to the model-based estimator.}
 
 \item{...}{additional arguments to [stats::nlm()].}
-
-\item{Primary}{Name of the primary endpoint}
 }
 \value{
 A list with point estimates using SL and BIC model averaging,

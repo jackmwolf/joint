@@ -12,6 +12,7 @@
 #' @param ci_level The confidence level required
 #' @return A data.frame with point estimates, standard error estimates, test
 #'   statistics, and 95% confidence interval bounds
+#' @importFrom stats pnorm uniroot var quantile qnorm
 #' @examples
 #' data(joint_example)
 #' # Using n_boot = 5 for example purposes only, use more bootstrap iterations
@@ -104,7 +105,7 @@ joint_ma_sim <- function(
 #' @return A data.frame with point estimates for various methods
 #' @examples
 #' data(joint_example)
-#' estimate_ma_2(
+#' joint_ma_sim_2(
 #'     joint_example,
 #'     endpoints = c("Y1", "Y2", "Y3"),
 #'     categorical = c(),
@@ -133,10 +134,12 @@ joint_ma_sim_2 <- function(
 #' Estimate the ATE with various methods for simulation studies
 #'
 #' @inheritParams joint_sem
+#' @param primary Name of the primary endpoint
 #' @param n_boot Number of bootstrap replications to perform
 #' @param ci_level The confidence level required
 #' @return A data.frame with point estimates, standard error estimates, and
 #'   bootstrapped percentile confidence interval bounds
+#' @importFrom stats sd quantile
 #' @examples
 #' data(joint_example)
 #' # Using n_boot = 5 for example purposes only, use more bootstrap iterations
@@ -194,9 +197,10 @@ joint_ma_sim_3 <- function(
 #' @inheritParams joint_sem
 #' @param n_boot Number of bootstrap replications to perform
 #' @param ci_level The confidence level required
+#' @param primary Name of the primary endpoint
 #' @return A data.frame with point estimates, standard error estimates, and
 #'   bootstrapped percentile confidence interval bounds
-#' @import sl3
+#' @importFrom stats sd quantile
 #' @examples
 #' data(joint_example)
 #' # Using n_boot = 5 for example purposes only, use more bootstrap iterations

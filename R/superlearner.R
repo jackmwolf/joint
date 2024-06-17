@@ -21,6 +21,7 @@ joint_sem_sl <- function(x, y, yname, categorical, ...) {
 #' @param object An object of class \code{joint_sem}
 #' @param newdata An optional data frame with treatment indicators. If omitted
 #'   the treatment indicators from the fitted model are used.
+#' @importFrom stats pnorm
 #' @return A vector of predicted outcomes given treatment indicators.
 predict.joint_sem <- function(object, newdata) {
   yname <- object$endpoints[1]

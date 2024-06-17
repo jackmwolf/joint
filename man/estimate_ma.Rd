@@ -9,6 +9,8 @@ estimate_ma(data0, endpoints, categorical, treatment, sandwich, ...)
 \arguments{
 \item{data0}{Data frame with treatment assignment and endpoints}
 
+\item{endpoints}{Character vector of endpoint names as in \code{data0}}
+
 \item{categorical}{Character vector of endpoint names to be treated as
 categorical (binary or ordinal) variables}
 
@@ -21,8 +23,8 @@ estimator in addition to the model-based estimator.}
 \item{...}{additional arguments to [stats::nlm()].}
 }
 \value{
-A list with point estimates using BIC model averagin and
-  sub-model estimates, SE estimates, and weights,
+A list with point estimates using BIC model averaging and
+  sub-model estimates, SE estimates, and weights.
 }
 \description{
 Estimate the ATE using model averaging

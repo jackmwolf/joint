@@ -9,6 +9,8 @@ joint_saturated(data0, endpoints, categorical = c(), treatment = "A", ...)
 \arguments{
 \item{data0}{Data frame with treatment assignment and endpoints}
 
+\item{endpoints}{Character vector of endpoint names as in \code{data0}}
+
 \item{categorical}{Character vector of endpoint names to be treated as
 categorical (binary or ordinal) variables}
 

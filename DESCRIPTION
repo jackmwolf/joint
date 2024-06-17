@@ -23,3 +23,12 @@ Depends:
 RoxygenNote: 7.3.1
 URL: https://github.com/jackmwolf/joint
 BugReports: https://github.com/jackmwolf/joint/issues
+Imports: 
+    MASS,
+    mvnfast,
+    mvtnorm,
+    numDeriv,
+    R6,
+    Rsolnp,
+    sl3,
+    VGAM
