@@ -10,6 +10,9 @@
 #' @inheritParams joint_sem
 #'
 #' @return An object of class [joint_sem]
+#'
+#' @importFrom stats coef glm binomial lm residuals coefficients predict nlm
+#' @importFrom VGAM vglm cumulative
 #' @examples
 #' data(joint_example)
 #' fit <- joint_saturated(
@@ -87,8 +90,8 @@ joint_saturated <- function(data0, endpoints, categorical = c(),
     E_categorical <- sapply(
       models[categorical],
       function(.x) {
-        if ("vglm" %in% class(.x)) {
-          VGAM::residuals(.x, type = "response")[, 1]
+        if (inherits(.x, "vglm")) {
+          residuals(.x, type = "response")[, 1]
         } else {
           residuals(.x, type = "deviance")
         }
@@ -109,11 +112,11 @@ joint_saturated <- function(data0, endpoints, categorical = c(),
     mu <- sapply(
       models,
       function(.x) {
-        if ("vglm" %in% class(.x)) {
+        if (inherits(.x, "vglm")) {
           data0[[treatment]] * coefficients(.x)[length(coefficients(.x))]
-        } else if ("glm" %in% class(.x)) {
+        } else if (inherits(.x, "glm")) {
           predict(.x, type = "link")
-        } else if (class(.x) == "lm") {
+        } else if (inherits(.x, "lm")) {
           predict(.x)
         }
       })
@@ -172,6 +175,7 @@ joint_saturated <- function(data0, endpoints, categorical = c(),
 #' covariances.
 #'
 #' @param phi Vector of covariance parameter estimates
+#' @param continuous Vector of categorical endpoint names
 #' @param lb,ub Matrix of lower and upper bounds for integration
 #' @param mu Matrix of endpoint means (on the probit scale for categorical
 #'   endpoints)
@@ -179,6 +183,7 @@ joint_saturated <- function(data0, endpoints, categorical = c(),
 #'   `phi` before likelihood calculation.
 #' @inheritParams joint_saturated
 #' @importFrom MASS ginv
+#' @importFrom mvtnorm pmvnorm
 #' @return The log likelihood for the input parameters and data
 ll_cat_saturated <- function(phi, data0, endpoints, categorical, treatment, continuous, lb, ub, mu, Sigma) {
 

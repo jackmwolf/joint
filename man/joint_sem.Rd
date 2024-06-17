@@ -11,11 +11,14 @@ joint_sem(
   treatment = "A",
   sandwich = FALSE,
   debug = FALSE,
+  phi_init = NULL,
   ...
 )
 }
 \arguments{
 \item{data0}{Data frame with treatment assignment and endpoints}
+
+\item{endpoints}{Character vector of endpoint names as in \code{data0}}
 
 \item{categorical}{Character vector of endpoint names to be treated as
 categorical (binary or ordinal) variables}
@@ -28,9 +31,9 @@ estimator in addition to the model-based estimator.}
 
 \item{debug}{Logical indicator to print diagnostic information}
 
-\item{...}{additional arguments to [stats::nlm()].}
+\item{phi_init}{Optional. Vector of initial parameter values for estimation.}
 
-\item{endpints}{Character vector of endpoint names as in \code{data0}}
+\item{...}{additional arguments to [stats::nlm()].}
 }
 \value{
 An object of class [joint_sem]

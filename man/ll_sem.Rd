@@ -11,6 +11,8 @@ ll_sem(phi, data0, endpoints, categorical, treatment, .names = NULL)
 
 \item{data0}{Data frame with treatment assignment and endpoints}
 
+\item{endpoints}{Character vector of endpoint names as in \code{data0}}
+
 \item{categorical}{Character vector of endpoint names to be treated as
 categorical (binary or ordinal) variables}
 

@@ -3,7 +3,9 @@
 #' Estimate an average treatment effect using TMLE (sl3)
 #'
 #' @inheritParams joint_sem
+#' @param primary Name of the primary endpoint
 #' @param ... Additional arguments to \code{joint_sem}
+#' @importFrom stats lm coef var
 #' @export
 #' @examples
 #' data(joint_example)

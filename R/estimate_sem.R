@@ -3,7 +3,7 @@
 #' Estimate a joint model using SEM constraints
 #'
 #' @param data0 Data frame with treatment assignment and endpoints
-#' @param endpints Character vector of endpoint names as in \code{data0}
+#' @param endpoints Character vector of endpoint names as in \code{data0}
 #' @param categorical Character vector of endpoint names to be treated as
 #'   categorical (binary or ordinal) variables
 #' @param treatment Character name of the column name corresponding to binary
@@ -14,6 +14,7 @@
 #' @param phi_init Optional. Vector of initial parameter values for estimation.
 #' @param ... additional arguments to [stats::nlm()].
 #'
+#' @importFrom numDeriv grad
 #' @return An object of class [joint_sem]
 #' @examples
 #' data(joint_example)
@@ -127,6 +128,7 @@ joint_sem <- function(data0, endpoints, categorical = c(), treatment = "A",
 #'
 #' @inheritParams joint_sem
 #' @param gamma Initial value of the gamma parameter, defaults to 2
+#' @importFrom stats qnorm var
 #' @return A named vector of initial parameter values for likelihood
 #'   maximization.
 initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma = 2) {
@@ -194,6 +196,7 @@ initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma 
 #' @param phi Named vector of parameter values
 #' @param .names Optimal vector of names for phi
 #' @inheritParams joint_sem
+#' @importFrom mvnfast dmvn
 #' @return The log likelihood for the input parameters and data
 ll_sem <- function(phi, data0, endpoints, categorical, treatment, .names = NULL) {
 
@@ -317,6 +320,7 @@ ll_sem <- function(phi, data0, endpoints, categorical, treatment, .names = NULL)
 #'   difference.
 #' @param sandwich Logical indicator to use the sandwich variance estimator
 #' @inherit joint_sem examples
+#' @importFrom stats pnorm dnorm
 #' @return A list of effect estimates and variances
 #' @export
 estimate_effects <- function(model, risk_difference = c(), sandwich = FALSE) {
