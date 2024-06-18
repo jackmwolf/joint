@@ -73,7 +73,20 @@ joint_sem <- function(data0, endpoints, categorical = c(), treatment = "A",
   if (debug) cat("Estimating model-based variance\n")
   # Variance estimation ---
   # E{H(theta)}^-1
-  H_inv <- solve(mle$hessian)
+  H_inv <- tryCatch(
+    expr = {
+      H_inv <- solve(mle$hessian)
+      H_inv
+    },
+    error = function(cond) {
+      message("Warning: joint_sem() could not invert hessian:")
+      message(conditionMessage(cond))
+      H_inv <- matrix(NA, ncol = ncol(mle$hessian), nrow = nrow(mle$hessian))
+      rownames(H_inv) <- colnames(H_inv) <- rownames(mle$hessian)
+      H_inv
+    }
+  )
+
   V_model <- H_inv
   V_out <- list(vcov = V_model)
 
