@@ -23,7 +23,7 @@ Estimate treatment effects from a joint model
 \examples{
 data(joint_example)
 fit <- joint_sem(
-  joint_example, endpoints = c("Y1", "Y2", "Y3_cat"), categorical = "Y3_cat")
+  joint_example, endpoints = c("Y1", "Y2", "Y3_cat"))
 fit
 estimate_effects(fit, risk_difference = "Y3_cat")
 }

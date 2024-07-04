@@ -4,8 +4,6 @@
 #'
 #' @param data0 Data frame with treatment assignment and endpoints
 #' @param endpoints Character vector of endpoint names as in \code{data0}
-#' @param categorical Character vector of endpoint names to be treated as
-#'   categorical (binary or ordinal) variables
 #' @param treatment Character name of the column name corresponding to binary
 #'   0-1 treatment indicator.
 #' @param sandwich Logical indicator for whether to return the sandwich variance
@@ -19,14 +17,17 @@
 #' @examples
 #' data(joint_example)
 #' fit <- joint_sem(
-#'   joint_example, endpoints = c("Y1", "Y2", "Y3_cat"), categorical = "Y3_cat")
+#'   joint_example, endpoints = c("Y1", "Y2", "Y3_cat"))
 #' fit
 #' estimate_effects(fit, risk_difference = "Y3_cat")
 #' @export
-joint_sem <- function(data0, endpoints, categorical = c(), treatment = "A",
+joint_sem <- function(data0, endpoints, treatment = "A",
                       sandwich = FALSE, debug = FALSE,
                       phi_init = NULL, ...) {
   t0 <- Sys.time()
+
+  # List of categorical (factor) endpoints
+  categorical <- endpoints[which(sapply(data0[, endpoints], is.factor))]
 
   if (debug) cat("Verifying input\n")
   verify_input_joint_sem(
@@ -45,7 +46,10 @@ joint_sem <- function(data0, endpoints, categorical = c(), treatment = "A",
         treatment = treatment)
     )
   }
-  if (debug) cat(paste0("phi_init = ", print(phi_init, digits = 2)))
+  if (debug) {
+    cat("phi_init:\n")
+    print(phi_init, digits = 2)
+  }
 
   if (debug) cat("Maximizing log likelihood\n")
   # Parameter estimation ---
@@ -140,6 +144,8 @@ joint_sem <- function(data0, endpoints, categorical = c(), treatment = "A",
 #' Create initial vector of parameter values for estimating a joint model
 #'
 #' @inheritParams joint_sem
+#' @param categorical Character vector of endpoint names to be treated as
+#'   categorical (binary or ordinal) variables
 #' @param gamma Initial value of the gamma parameter, defaults to 2
 #' @importFrom stats qnorm var
 #' @return A named vector of initial parameter values for likelihood
@@ -151,7 +157,12 @@ initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma 
 
   if (q > 0) {
     # Identify appropriate # levels for categorical endpoints
-    n_levels <- apply(data0[, categorical, drop = FALSE], MARGIN = 2, function(.x) length(unique(.x[!is.na(.x)])))
+    n_levels <- vector(mode = "integer", length = length(categorical))
+    for (i in seq_along(categorical)) {
+      n_levels[i] <- length(levels(data0[[categorical[i]]]))
+    }
+    names(n_levels) <- categorical
+
     # Number of required threshold parameters for partitioning real line for
     # the probit model (-infty < 0 < a1 < a2 < ... < a_nthresholds < infty)
     n_thresholds <- n_levels - 2
@@ -166,8 +177,15 @@ initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma 
   for (p in 1:length(endpoints)) {
     if (endpoints[p] %in% categorical) {
 
-      nu[p] <- qnorm(1 - mean(data0[data0[[treatment]] == 0, endpoints[p]] == 0))
-      lambda[p] <- 1/gamma * (1 - mean(data0[data0[[treatment]] == 1, endpoints[p]] == 0) - nu[p])
+      nu[p] <- qnorm(
+        1 - mean(
+          as.numeric(data0[data0[[treatment]] == 0, endpoints[p]]) == 1
+          )
+        )
+      lambda[p] <- 1/gamma * (
+        1 - mean(
+          as.numeric(data0[data0[[treatment]] == 1, endpoints[p]]) == 1
+          ) - nu[p])
 
       if (n_thresholds[endpoints[p]] > 0) {
 
@@ -209,6 +227,8 @@ initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma 
 #' @param phi Named vector of parameter values
 #' @param .names Optimal vector of names for phi
 #' @inheritParams joint_sem
+#' @param categorical Character vector of endpoint names to be treated as
+#'   categorical (binary or ordinal) variables
 #' @importFrom mvnfast dmvn
 #' @return The log likelihood for the input parameters and data
 ll_sem <- function(phi, data0, endpoints, categorical, treatment, .names = NULL) {
@@ -303,8 +323,8 @@ ll_sem <- function(phi, data0, endpoints, categorical, treatment, .names = NULL)
         phi[grep(paste0("a_", categorical[p], "_"), names(phi))],
         Inf
       )
-      lb[, p] <- thresholds[data0[, categorical[p]] + 1]
-      ub[, p] <- thresholds[data0[, categorical[p]] + 2]
+      lb[, p] <- thresholds[as.numeric(data0[, categorical[p]])]
+      ub[, p] <- thresholds[as.numeric(data0[, categorical[p]]) + 1]
     }
 
     ll_categorical <- vector(length = n)
@@ -362,9 +382,9 @@ estimate_effects <- function(model, risk_difference = c(), sandwich = FALSE) {
   V <- vcov[params, params]
 
   # Vector for storing point estimates
-  ests <- vector(mode = "double", length = length(endpoints) + length(risk_difference))
+  ests <- vector(mode = "double", length = length(endpoints) + length(risk_difference) * 2)
   if (length(risk_difference) > 0) {
-    names(ests) <- c(endpoints, paste0(risk_difference, "_RD"))
+    names(ests) <- c(endpoints, paste0(risk_difference, "_RD"), paste0(risk_difference, "_SD"))
   } else {
     names(ests) <- endpoints
   }
@@ -382,7 +402,7 @@ estimate_effects <- function(model, risk_difference = c(), sandwich = FALSE) {
     j[y, paste0("lambda_", y)] <- beta["gamma"]
   }
 
-  # Effects on risk difference scale
+  # Effects on risk difference scale and probit coefficients (with var = 1)
   for (y in risk_difference) {
     gamma <- beta["gamma"]
     nu <- beta[paste0("nu_", y)]
@@ -401,6 +421,12 @@ estimate_effects <- function(model, risk_difference = c(), sandwich = FALSE) {
     j[paste0(y, "_RD"), paste0("lambda_", y)] <-
       (d1 * (gamma - nu * lambda) - d0 * (-nu * lambda))/
       (1 + lambda^2)^(3/2)
+
+    ests[paste0(y, "_SD")] <- unname((nu + gamma * lambda)/sqrt(1 + lambda^2))
+    j[paste0(y, "_SD"), "gamma"] <- lambda/sqrt(1 + lambda^2)
+    j[paste0(y, "_SD"), paste0("nu_", y)] <- 1/sqrt(1 + lambda^2)
+    j[paste0(y, "_SD"), paste0("lambda_", y)] <- gamma/sqrt(1 + lambda^2)
+
   }
 
   v_est <- j %*% V %*% t(j)

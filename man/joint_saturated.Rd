@@ -4,15 +4,12 @@
 \alias{joint_saturated}
 \title{Estimate a saturated joint model}
 \usage{
-joint_saturated(data0, endpoints, categorical = c(), treatment = "A", ...)
+joint_saturated(data0, endpoints, treatment = "A", ...)
 }
 \arguments{
 \item{data0}{Data frame with treatment assignment and endpoints}
 
 \item{endpoints}{Character vector of endpoint names as in \code{data0}}
-
-\item{categorical}{Character vector of endpoint names to be treated as
-categorical (binary or ordinal) variables}
 
 \item{treatment}{Character name of the column name corresponding to binary
 0-1 treatment indicator.}
@@ -31,6 +28,6 @@ likelihood and the log likelihood is returned.
 \examples{
 data(joint_example)
 fit <- joint_saturated(
-  joint_example, endpoints = c("Y1", "Y2", "Y3_cat"), categorical = "Y3_cat")
+  joint_example, endpoints = c("Y1", "Y2", "Y3_cat"))
 fit
 }

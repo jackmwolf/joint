@@ -3,16 +3,25 @@
 #' @param x Matrix of secondary endpoints and treatment indicator
 #' @param y Vector of primary endpoint measurements
 #' @param yname Character name for primary endpoint
+#' @param categorical Character vector of endpoint names to be treated as
+#'   categorical (binary or ordinal) variables
 #' @inheritParams joint_sem
 #' @inherit joint_sem return
 joint_sem_sl <- function(x, y, yname, categorical, ...) {
 
   data0 <- data.frame(y, x)
+
+  # Undo temporary coding of factors as numeric to avoid sl3 creating
+  # indicator variables.
+  for (p in setdiff(categorical, yname)) {
+    data0[[p]] <- factor(data0[[p]])
+  }
+
   names(data0)[1] <- yname
   endpoints <- colnames(data0)[colnames(data0) != "A"]
 
   fit_object <- joint_sem(
-    data0 = data0, endpoints = endpoints, categorical = categorical)
+    data0 = data0, endpoints = endpoints)
   fit_object$A <- data0$A
   fit_object
 }
@@ -22,20 +31,13 @@ joint_sem_sl <- function(x, y, yname, categorical, ...) {
 #' @param newdata An optional data frame with treatment indicators. If omitted
 #'   the treatment indicators from the fitted model are used.
 #' @importFrom stats pnorm
-#' @return A vector of predicted outcomes given treatment indicators.
+#' @importFrom sl3 pack_predictions
+#' @return Predicted outcomes given treatment indicators.
 predict.joint_sem <- function(object, newdata) {
   yname <- object$endpoints[1]
   gamma <- object$estimate["gamma"]
   nu <- object$estimate[paste0("nu_", yname)]
   lambda <- object$estimate[paste0("lambda_", yname)]
-
-  if (yname %in% object$categorical) {
-    mu1 <- pnorm((nu + gamma * lambda)/sqrt(1 + lambda^2))
-    mu0 <- pnorm((nu)/sqrt(1 + lambda^2))
-  } else {
-    mu1 <- nu + gamma * lambda
-    mu0 <- nu
-  }
 
   if (missing(newdata) || is.null(newdata)) {
     A <- object$A
@@ -43,14 +45,59 @@ predict.joint_sem <- function(object, newdata) {
     A <- newdata$A
   }
 
-  ifelse(A == 1, mu1, mu0)
+  # Ordinal endpoint: Matrix of predicted probabilities
+  if (paste0("a_", yname, "_1") %in% names(object$estimate)) {
+
+    # Conditional mean on link scale
+    mu1 <- (nu + gamma * lambda)/sqrt(1 + lambda^2)
+    mu0 <- (nu)/sqrt(1 + lambda^2)
+
+    # Thresholds for integration
+    thresholds <- c(
+      -Inf, 0,
+      object$estimate[grep(paste0("a_", yname, "_"), names(object$estimate))],
+      Inf
+    )
+    names(thresholds) <- NULL
+
+    # Predicted probabilities under A = 1
+    probs_1 <- pnorm(thresholds, mean = mu1, sd = 1)
+    preds_1 <- diff(probs_1)
+
+    # Predicted probabilities under A = 0
+    probs_0 <- pnorm(thresholds, mean = mu0, sd = 1)
+    preds_0 <- diff(probs_0)
+
+    # Return matrix of predicted probabilities
+    out <- matrix(nrow = length(A), ncol = length(preds_1))
+    out[A == 1, ] <- matrix(preds_1, nrow = sum(A == 1), ncol = length(preds_1), byrow = TRUE)
+    out[A == 0, ] <- matrix(preds_0, nrow = sum(A == 0), ncol = length(preds_1), byrow = TRUE)
+
+    # Return packed_predictions object for sl3 loss function
+    out <- sl3::pack_predictions(out)
+
+    return(out)
+
+  } else {
+    # Binary or numerical endpoint: Vector of expectations
+    if (yname %in% object$categorical) {
+      mu1 <- pnorm((nu + gamma * lambda)/sqrt(1 + lambda^2))
+      mu0 <- pnorm((nu)/sqrt(1 + lambda^2))
+    } else {
+      mu1 <- nu + gamma * lambda
+      mu0 <- nu
+    }
+    out <- ifelse(A == 1, mu1, mu0)
+
+    return(out)
+  }
+
 }
 
 ##' \code{sl3} Learner for SEM \code{joint_sem}.
 ##'
 ##' @docType class
 ##' @importFrom R6 R6Class
-##' @export
 ##' @keywords data
 ##' @return Learner object with methods for training and prediction.
 ##'   See \code{\link{Lrnr_base}} for documentation on learners.
@@ -79,7 +126,7 @@ Lrnr_sem <- R6::R6Class(
   private = list(
     # list properties your learner supports here.
     # Use sl3_list_properties() for a list of options
-    .properties = c("continuous", "binomial"),
+    .properties = c("continuous", "binomial", "categorical"),
 
     # list any packages required for your learner here.
     .required_packages = c("joint"),

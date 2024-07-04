@@ -15,18 +15,6 @@ joint_ma_sim_3(
   sandwich = FALSE,
   ...
 )
-
-joint_ma_sim_3(
-  data0,
-  endpoints,
-  categorical = c(),
-  treatment = "A",
-  primary,
-  n_boot = 100,
-  ci_level = 0.95,
-  sandwich = FALSE,
-  ...
-)
 }
 \arguments{
 \item{data0}{Data frame with treatment assignment and endpoints}
@@ -53,28 +41,18 @@ estimator in addition to the model-based estimator.}
 \value{
 A data.frame with point estimates, standard error estimates, and
   bootstrapped percentile confidence interval bounds
-
-A data.frame with point estimates, standard error estimates, and
-  bootstrapped percentile confidence interval bounds
 }
 \description{
 Estimate the ATE with various methods for simulation studies
-
-Estimate the ATE with various methods for simulation studies
 }
 \examples{
+\donttest{
 data(joint_example)
 # Using n_boot = 5 for example purposes only, use more bootstrap iterations
 # in practice!
 joint_ma_sim_3(
   data0 = joint_example, endpoints = c("Y1", "Y2", "Y3"), treatment = "A",
   primary = "Y1", n_boot = 5)
-
-data(joint_example)
-# Using n_boot = 5 for example purposes only, use more bootstrap iterations
-# in practice!
-joint_ma_sim_3(
-  data0 = joint_example, endpoints = c("Y1", "Y2", "Y3"), treatment = "A",
-  primary = "Y1", n_boot = 5)
+}
 
 }

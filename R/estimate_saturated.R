@@ -16,12 +16,16 @@
 #' @examples
 #' data(joint_example)
 #' fit <- joint_saturated(
-#'   joint_example, endpoints = c("Y1", "Y2", "Y3_cat"), categorical = "Y3_cat")
+#'   joint_example, endpoints = c("Y1", "Y2", "Y3_cat"))
 #' fit
 #' @export
-joint_saturated <- function(data0, endpoints, categorical = c(),
+joint_saturated <- function(data0, endpoints,
                             treatment = "A", ...) {
   t0 <- Sys.time()
+
+  # List of categorical (factor) endpoints
+  categorical <- endpoints[which(sapply(data0[, endpoints], is.factor))]
+
   verify_input_joint_sem(
     data0 = data0, endpoints = endpoints, categorical = categorical,
     treatment = treatment)
@@ -48,17 +52,17 @@ joint_saturated <- function(data0, endpoints, categorical = c(),
 
       if (length(unique(data0[, endpoints[p]])) > 2) {
         models[[p]] <- VGAM::vglm(
-          data0[, endpoints[p]] ~ data0[[treatment]],
+          as.numeric(data0[, endpoints[p]]) ~ data0[[treatment]],
           family = VGAM::cumulative(link="probitlink", parallel=TRUE)
           )
         thresholds <- c(-Inf, coef(models[[p]])[1:length(unique(data0[, endpoints[p]]))-1], Inf)
-        lb[, p] <- thresholds[data0[, endpoints[p]] + 1]
-        ub[, p] <- thresholds[data0[, endpoints[p]] + 2]
+        lb[, p] <- thresholds[as.numeric(data0[, endpoints[p]])]
+        ub[, p] <- thresholds[as.numeric(data0[, endpoints[p]]) + 1]
       } else {
         models[[p]] <- glm(data0[, endpoints[p]] ~ data0[[treatment]], family = binomial("probit"))
         thresholds <- c(-Inf, 0, Inf)
-        lb[, p] <- thresholds[data0[, endpoints[p]] + 1]
-        ub[, p] <- thresholds[data0[, endpoints[p]] + 2]
+        lb[, p] <- thresholds[as.numeric(data0[, endpoints[p]])]
+        ub[, p] <- thresholds[as.numeric(data0[, endpoints[p]]) + 1]
 
       }
 
@@ -91,7 +95,8 @@ joint_saturated <- function(data0, endpoints, categorical = c(),
       models[categorical],
       function(.x) {
         if (inherits(.x, "vglm")) {
-          residuals(.x, type = "response")[, 1]
+          # residuals(.x, type = "response")[, 1]
+          attributes(.x)$residuals[, 1]
         } else {
           residuals(.x, type = "deviance")
         }
@@ -184,6 +189,7 @@ joint_saturated <- function(data0, endpoints, categorical = c(),
 #' @param Sigma Matrix of endpoint covariances. Some entries are overwritten by
 #'   `phi` before likelihood calculation.
 #' @inheritParams joint_saturated
+#' @inheritParams ll_sem
 #' @importFrom MASS ginv
 #' @importFrom mvtnorm pmvnorm
 #' @return The log likelihood for the input parameters and data

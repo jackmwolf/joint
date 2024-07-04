@@ -1,6 +1,7 @@
 #' Verify input to joint_sem()
 #'
 #' @inheritParams joint_sem
+#' @inheritParams ll_sem
 #' @return TRUE if all input is valid
 verify_input_joint_sem <- function(data0, endpoints, categorical, treatment) {
 
@@ -12,6 +13,30 @@ verify_input_joint_sem <- function(data0, endpoints, categorical, treatment) {
   # Verify all categorical are listed in endpoints
   if (any(!categorical %in% endpoints)) {
     stop("Input in 'categorical' is not in 'endpoints'.")
+  }
+
+  # Verify all categorical are factors
+  for (p in categorical) {
+    if (!is.factor(data0[[p]])) stop(
+      paste0(
+        "All endpoints listed in 'categorical' must be factors. ",
+        "Endpoint ",
+        p,
+        " is not a factor."
+        )
+    )
+  }
+
+  # Verify all not categorical are numeric
+  for (p in setdiff(endpoints, categorical)) {
+    if (!is.numeric(data0[[p]])) stop (
+      paste0(
+        "All endpoints not listed in 'categorical' must be numeric ",
+        "Endpoint ",
+        p,
+        " is not numeric"
+      )
+    )
   }
 
   # Verify treatment is column in data0

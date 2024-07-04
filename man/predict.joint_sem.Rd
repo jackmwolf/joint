@@ -13,7 +13,7 @@
 the treatment indicators from the fitted model are used.}
 }
 \value{
-A vector of predicted outcomes given treatment indicators.
+Predicted outcomes given treatment indicators.
 }
 \description{
 Predict method for \code{joint_sem} for Super Learning.

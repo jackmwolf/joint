@@ -20,7 +20,7 @@ Y3_cat <- ifelse(Y[, 3] > 0, 1, 0)
 Y4_cat <- ifelse(Y[, 4] > qnorm(0.75), 2, ifelse(Y[, 4] > 0, 1, 0))
 
 joint_example <- data.frame(A = A, Y1 = Y[, 1], Y2 = Y[, 2], Y3 = Y[, 3], Y4 = Y[, 4],
-                    Y3_cat = Y3_cat, Y4_cat = Y4_cat)
+                    Y3_cat = factor(Y3_cat), Y4_cat = factor(Y4_cat))
 
 
 usethis::use_data(joint_example, overwrite = TRUE)
