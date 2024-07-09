@@ -168,10 +168,12 @@ initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma 
     n_thresholds <- n_levels - 2
   }
 
+
   nu <- vector(mode = "double", length = P)
   lambda <- vector(mode = "double", length = P)
   logtheta <- vector(mode = "double", length = 0)
   a <- vector(mode = "double", length = 0)
+  logdiffa <- vector(mode = "double", length = 0)
 
 
   for (p in 1:length(endpoints)) {
@@ -190,9 +192,12 @@ initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma 
       if (n_thresholds[endpoints[p]] > 0) {
 
         cum_props_p <- cumsum(prop.table(table(data0[data0[[treatment]] == 0, endpoints[p]])))
-        a_p <- qnorm(cum_props_p)[2:(length(cum_props_p) - 1)]
+        a_p <- qnorm(cum_props_p)[2:(length(cum_props_p) - 1)] - nu[p]
+        logdiffa_p <- log(diff(c(0, a_p)))
         names(a_p) <- paste0("a_", endpoints[p], "_", 1:length(a_p))
+        names(logdiffa_p) <- paste0("logdiffa_", endpoints[p], "_", 1:length(a_p))
         a <- c(a, a_p)
+        logdiffa <- c(logdiffa, logdiffa_p)
 
       }
 
@@ -215,7 +220,7 @@ initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma 
     nu,
     lambda,
     logtheta,
-    a
+    logdiffa
   )
 
   names(phi_init)[1] <- "gamma"
@@ -318,9 +323,12 @@ ll_sem <- function(phi, data0, endpoints, categorical, treatment, .names = NULL)
     ub <- matrix(nrow = n, ncol = length(categorical))
 
     for (p in 1:length(categorical)) {
+      logdiffs <- phi[grep(paste0("logdiffa_", categorical[p], "_"), names(phi))]
+      diffs <- exp(logdiffs)
+
       thresholds <- c(
         -Inf, 0,
-        phi[grep(paste0("a_", categorical[p], "_"), names(phi))],
+        cumsum(diffs),
         Inf
       )
       lb[, p] <- thresholds[as.numeric(data0[, categorical[p]])]

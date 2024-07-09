@@ -46,16 +46,19 @@ predict.joint_sem <- function(object, newdata) {
   }
 
   # Ordinal endpoint: Matrix of predicted probabilities
-  if (paste0("a_", yname, "_1") %in% names(object$estimate)) {
+  if (paste0("logdiffa_", yname, "_1") %in% names(object$estimate)) {
 
     # Conditional mean on link scale
     mu1 <- (nu + gamma * lambda)/sqrt(1 + lambda^2)
     mu0 <- (nu)/sqrt(1 + lambda^2)
 
     # Thresholds for integration
+    logdiffs <- object$estimate[grep(paste0("logdiffa_", yname, "_"), names(object$estimate))]
+    diffs <- exp(logdiffs)
+
     thresholds <- c(
       -Inf, 0,
-      object$estimate[grep(paste0("a_", yname, "_"), names(object$estimate))],
+      cumsum(diffs),
       Inf
     )
     names(thresholds) <- NULL
