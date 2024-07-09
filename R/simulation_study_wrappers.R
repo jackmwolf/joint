@@ -354,7 +354,7 @@ joint_ma_sim_5 <- function(
 
 
   # Estimates on data0
-  estimate <- estimate_ma_5(data0, endpoints, treatment, primary)
+  estimate <- estimate_ma_5(data0, endpoints, treatment, primary, ...)
 
   # Bootstrapping
   n <- nrow(data0)

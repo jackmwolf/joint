@@ -21,7 +21,7 @@ joint_sem_sl <- function(x, y, yname, categorical, ...) {
   endpoints <- colnames(data0)[colnames(data0) != "A"]
 
   fit_object <- joint_sem(
-    data0 = data0, endpoints = endpoints)
+    data0 = data0, endpoints = endpoints, ...)
   fit_object$A <- data0$A
   fit_object
 }
