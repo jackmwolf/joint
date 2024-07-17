@@ -192,7 +192,7 @@ initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma 
       if (n_thresholds[endpoints[p]] > 0) {
 
         cum_props_p <- cumsum(prop.table(table(data0[data0[[treatment]] == 0, endpoints[p]])))
-        a_p <- qnorm(cum_props_p)[2:(length(cum_props_p) - 1)] - nu[p]
+        a_p <- qnorm(cum_props_p)[2:(length(cum_props_p) - 1)] - qnorm(cum_props_p)[1]
         logdiffa_p <- log(diff(c(0, a_p)))
         names(a_p) <- paste0("a_", endpoints[p], "_", 1:length(a_p))
         names(logdiffa_p) <- paste0("logdiffa_", endpoints[p], "_", 1:length(a_p))

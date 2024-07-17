@@ -413,8 +413,8 @@ joint_ma_sim_5 <- function(
       NA),
 
     max_iterations_boot = c(
-      max(boot_results$nlm_iterations_sem, na.rm = TRUE),
-      max(boot_results$nlm_iterations_saturated, na.rm = TRUE),
+      max(c(boot_results$nlm_iterations_sem, -Inf),  na.rm = TRUE),
+      max(c(boot_results$nlm_iterations_saturated, -Inf), na.rm = TRUE),
       NA,
       NA
     ),

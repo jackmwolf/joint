@@ -403,7 +403,7 @@ estimate_ma_5 <- function(
 
   # Fit saturated model
   est_saturated <- joint_saturated(
-    data0 = data0, endpoints = endpoints, treatment = treatment, ...
+    data0 = data0, endpoints = endpoints, treatment = treatment
   )
 
   # Pull estimated effects
