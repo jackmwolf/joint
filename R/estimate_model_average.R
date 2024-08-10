@@ -329,6 +329,8 @@ estimate_ma_4 <- function(
 #' @param primary Name of the primary endpoint
 #' @param n_boot Number of boostrap samples
 #' @param ci_level Confidence level
+#' @param force_probit For binary endpoints only. If TRUE, reports probit
+#'   regression coefficient instead of risk difference.
 #' @importFrom stats lm coef vcov
 #' @importFrom rpart rpart.control
 #' @importFrom VGAM vglm cumulative
@@ -336,7 +338,7 @@ estimate_ma_4 <- function(
 #'   sub-model estimates, SE estimates, and weights.
 estimate_ma_5 <- function(
     data0, endpoints, treatment = "A", primary, n_boot = 100,
-    ci_level = 0.95, sandwich = FALSE, ...) {
+    ci_level = 0.95, sandwich = FALSE, force_probit = FALSE, ...) {
 
   # List of categorical (factor) endpoints
   categorical <- endpoints[which(sapply(data0[, endpoints], is.factor))]
@@ -407,7 +409,7 @@ estimate_ma_5 <- function(
   )
 
   # Pull estimated effects
-  if (primary_ordinal) {
+  if (primary_ordinal | force_probit) {
     ate_sem <- unname(xyz_sem$estimate[paste0(primary, "_SD")])
     v_sem  <- unname(diag(xyz_sem$vcov)[paste0(primary, "_SD")])
 
