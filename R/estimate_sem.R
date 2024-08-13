@@ -430,9 +430,8 @@ estimate_effects <- function(model, risk_difference = c(), sandwich = FALSE) {
       (d1 * (gamma - nu * lambda) - d0 * (-nu * lambda))/
       (1 + lambda^2)^(3/2)
 
-    ests[paste0(y, "_SD")] <- unname((nu + gamma * lambda)/sqrt(1 + lambda^2))
+    ests[paste0(y, "_SD")] <- unname((gamma * lambda)/sqrt(1 + lambda^2))
     j[paste0(y, "_SD"), "gamma"] <- lambda/sqrt(1 + lambda^2)
-    j[paste0(y, "_SD"), paste0("nu_", y)] <- 1/sqrt(1 + lambda^2)
     j[paste0(y, "_SD"), paste0("lambda_", y)] <- gamma/sqrt(1 + lambda^2)
 
   }
