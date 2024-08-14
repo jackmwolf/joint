@@ -1,7 +1,7 @@
 Package: joint
 Type: Package
 Title: Fit Joint Endpoint Models to Efficiently Estimate Treatment Effects
-Version: 0.3.0.9006
+Version: 0.3.0.9007
 Authors@R: 
     person(given = "Jack",
            family = "Wolf",

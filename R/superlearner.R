@@ -49,8 +49,8 @@ predict.joint_sem <- function(object, newdata) {
   if (paste0("logdiffa_", yname, "_1") %in% names(object$estimate)) {
 
     # Conditional mean on link scale
-    mu1 <- (nu + gamma * lambda)#/sqrt(1 + lambda^2)
-    mu0 <- (nu)#/sqrt(1 + lambda^2)
+    mu1 <- nu + gamma * lambda
+    mu0 <- nu
 
     # Thresholds for integration
     logdiffs <- object$estimate[grep(paste0("logdiffa_", yname, "_"), names(object$estimate))]
@@ -64,11 +64,11 @@ predict.joint_sem <- function(object, newdata) {
     names(thresholds) <- NULL
 
     # Predicted probabilities under A = 1
-    probs_1 <- pnorm(thresholds, mean = mu1, sd = sqrt(1 + lambda^2))
+    probs_1 <- pnorm((thresholds - mu1)/sqrt(1 + lambda^2))
     preds_1 <- diff(probs_1)
 
     # Predicted probabilities under A = 0
-    probs_0 <- pnorm(thresholds, mean = mu0, sd = sqrt(1 + lambda^2))
+    probs_0 <- pnorm((thresholds - mu0)/sqrt(1 + lambda^2))
     preds_0 <- diff(probs_0)
 
     # Return matrix of predicted probabilities
