@@ -417,10 +417,8 @@ estimate_ma_5 <- function(
   } else {
 
     if (primary %in% categorical) {
-      # ate_sem <- unname(xyz_sem$estimate[paste0(primary, "_RD")])
-      # v_sem  <- unname(diag(xyz_sem$vcov)[paste0(primary, "_RD")])
-      ate_sem <- unname(xyz_sem$estimate[paste0(primary)])
-      v_sem  <- unname(diag(xyz_sem$vcov)[paste0(primary)])
+      ate_sem <- unname(xyz_sem$estimate[paste0(primary, "_RD")])
+      v_sem  <- unname(diag(xyz_sem$vcov)[paste0(primary, "_RD")])
     } else {
       ate_sem <- unname(xyz_sem$estimate[paste0(primary)])
       v_sem  <- unname(diag(xyz_sem$vcov)[paste0(primary)])
