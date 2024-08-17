@@ -366,9 +366,14 @@ estimate_ma_5 <- function(
 
 
   # Define appropriate saturated learner
-  lrnr_saturated <- sl3::Lrnr_rpart$new(
-    covariates = treatment,
-    control = rpart::rpart.control(minsplit = 1, cp = 0))
+  if (primary_ordinal) {
+    lrnr_saturated <- sl3::Lrnr_rpart$new(
+      covariates = treatment,
+      control = rpart::rpart.control(minsplit = 1, cp = 0))
+  } else {
+    lrnr_saturated <- sl3::Lrnr_glm$new(
+      covariates = treatment)
+  }
 
   stack <- sl3::Stack$new(lrnr_sem, lrnr_saturated)
 
