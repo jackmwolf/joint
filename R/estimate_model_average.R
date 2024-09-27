@@ -362,17 +362,21 @@ estimate_ma_5 <- function(
   )
 
   # SEM learner
-  lrnr_sem <- Lrnr_sem$new(name = "SEM", categorical = categorical, ...)
+  lrnr_sem <- Lrnr_sem$new(
+    name = "SEM", categorical = categorical, treatment = treatment, ...)
 
 
   # Define appropriate saturated learner
   if (primary_ordinal) {
-    lrnr_saturated <- sl3::Lrnr_rpart$new(
-      covariates = treatment,
-      control = rpart::rpart.control(minsplit = 1, cp = 0))
+    # lrnr_saturated <- sl3::Lrnr_rpart$new(
+    #   covariates = treatment,
+    #   control = rpart::rpart.control(minsplit = 1, cp = 0)
+    #   )
+    # lrnr_saturated <- Lrnr_polr$new(covariates = treatment)
+    lrnr_saturated <- Lrnr_vglm$new(covariates = treatment, treatment = treatment)
+
   } else {
-    lrnr_saturated <- sl3::Lrnr_glm$new(
-      covariates = treatment)
+    lrnr_saturated <- sl3::Lrnr_glm$new(covariates = treatment)
   }
 
   stack <- sl3::Stack$new(lrnr_sem, lrnr_saturated)

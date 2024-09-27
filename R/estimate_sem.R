@@ -315,7 +315,7 @@ ll_sem <- function(phi, data0, endpoints, categorical, treatment, .names = NULL)
 
     } else {
       c_e <- mu[, categorical, drop = FALSE]
-      cv <- Sigma[categorical, categorical, drop = FALSE]
+      c_v <- Sigma[categorical, categorical, drop = FALSE]
     }
 
     # Set up bounds for integration

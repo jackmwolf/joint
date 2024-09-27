@@ -109,10 +109,17 @@ joint_saturated <- function(data0, endpoints,
     scalar[1:(P-q)] <- 1
     V_hat <- diag(scalar) %*% V_hat %*% diag(scalar)
 
+    rownames(V_hat) <- colnames(V_hat) <- colnames(E)
+
     # Take required parameters of variance matrix for
     # Cov(X_continuous, X_categorical) and Cov(X_categorical, X_categorical)
     # by ignoring the first (P - q) * (P - q - 1)/2 elements of the upper triangle
-    phi_init <- V_hat[upper.tri(V_hat)][-c(1:((P - q) * (P - q - 1)/2))]
+    n_exclude <- (P - q) * (P - q - 1)/2
+    if (n_exclude == 0) {
+      phi_init <- V_hat[upper.tri(V_hat)]
+    } else {
+      phi_init <- V_hat[upper.tri(V_hat)][-c(1:((P - q) * (P - q - 1)/2))]
+    }
 
     mu <- sapply(
       models,
@@ -142,6 +149,7 @@ joint_saturated <- function(data0, endpoints,
         Sigma = V_hat,
         p = phi_init,
         hessian = FALSE,
+        stepmax = 2,
         ...
       )
     })
@@ -200,10 +208,15 @@ ll_cat_saturated <- function(phi, data0, endpoints, categorical, treatment, cont
   n <- nrow(data0)
 
   # V(Y) ---
-  Sigma[upper.tri(Sigma)][-c(1:((P - q) * (P - q - 1)/2))] <- phi
+  if (length(phi) == length(Sigma[upper.tri(Sigma)])) {
+    Sigma[upper.tri(Sigma)] <- phi
+  } else {
+    Sigma[upper.tri(Sigma)][-c(1:((P - q) * (P - q - 1)/2))] <- phi
+  }
+
   Sigma[lower.tri(Sigma)] <- t(Sigma)[lower.tri(Sigma)]
 
-  colnames(Sigma) <- rownames(Sigma) <- endpoints
+  colnames(Sigma) <- rownames(Sigma) <- c(continuous, categorical)
 
   ## Categorical endpoints ===
   if (P - q > 0) {
@@ -226,7 +239,7 @@ ll_cat_saturated <- function(phi, data0, endpoints, categorical, treatment, cont
 
   } else {
     c_e <- mu[, categorical, drop = FALSE]
-    cv <- Sigma[categorical, categorical, drop = FALSE]
+    c_v <- Sigma[categorical, categorical, drop = FALSE]
   }
 
   ll_categorical <- vector(length = n)

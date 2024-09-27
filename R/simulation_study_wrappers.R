@@ -365,7 +365,7 @@ joint_ma_sim_5 <- function(
 
       tryCatch(
         expr = {
-          estimate_ma_5(data_boot, endpoints, treatment, primary)
+          estimate_ma_5(data_boot, endpoints, treatment, primary, sandwich = FALSE, ...)
         },
         error = function(cond) {
           message("Error in bootstrap sampling:")
