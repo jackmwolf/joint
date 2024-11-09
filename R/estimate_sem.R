@@ -205,7 +205,7 @@ initalize_phi <- function(data0, endpoints, categorical = c(), treatment, gamma 
 
       nu[p] <- mean(data0[data0[[treatment]] == 0, endpoints[p]])
       lambda[p] <- 1/gamma * (mean(data0[data0[[treatment]] == 1, endpoints[p]]) - nu[p])
-      logtheta_p <- max(var(data0[data0[[treatment]] == 0, endpoints[p]]) - lambda[p]^2, 0)
+      logtheta_p <- log(max(var(data0[data0[[treatment]] == 0, endpoints[p]]) - lambda[p]^2, 1e-5))
       names(logtheta_p) <- paste0("logtheta_", endpoints[p])
       logtheta <- c(logtheta, logtheta_p)
 
