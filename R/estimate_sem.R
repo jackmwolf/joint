@@ -445,6 +445,91 @@ estimate_effects <- function(model, risk_difference = c(), sandwich = FALSE) {
   return(out)
 }
 
+#' Estimate conditional means  from a joint model
+#'
+#' @param model An object of class [joint_sem]
+#' @param sandwich Logical indicator to use the sandwich variance estimator
+#' @inherit joint_sem examples
+#' @importFrom stats pnorm dnorm
+#' @return A list of mean estimates and variances
+#' @export
+estimate_means <- function(model, sandwich = FALSE) {
+
+  estimate <- model$estimate
+
+  if (sandwich) {
+    if (!is.null(model$vcov_sandwich)) {
+      vcov <- model$vcov_sandwich
+    } else {
+      warning("Input model does not have sandwich variance matrix. Using model-based variance.")
+      vcov <- model$vcov
+    }
+  } else {
+    vcov <- model$vcov
+  }
+
+  endpoints <- model$endpoints
+
+  params <- c("gamma", paste0("nu_", endpoints), paste0("lambda_", endpoints))
+
+  beta <- estimate[params]
+  V <- vcov[params, params]
+
+  # Vector for storing point estimates (does not work for ordinal endpoints)
+  ests <- vector(mode = "double", length = 2 * length(endpoints))
+  names(ests) <- c(paste0(endpoints, "_A0" ), paste0(endpoints, "_A1" ))
+
+  # Matrix of gradient for transformation beta --> ests
+  j <- matrix(0, nrow = length(ests), ncol = length(beta))
+  rownames(j) <- names(ests)
+  colnames(j) <- names(beta)
+
+  for (y in endpoints) {
+
+    gamma <- beta["gamma"]
+    nu <- beta[paste0("nu_", y)]
+    lambda <- estimate[paste0("lambda_", y)]
+
+    if (paste0("logtheta_", y) %in% names(estimate)) {
+
+      ests[paste0(y, "_A0")] <- nu
+      ests[paste0(y, "_A1")] <- nu + gamma * lambda
+
+      j[paste0(y, "_A0"), paste0("nu_", y)] <- 1
+      j[paste0(y, "_A1"), paste0("nu_", y)] <- 1
+      j[paste0(y, "_A1"), "gamma"] <- lambda
+      j[paste0(y, "_A1"), paste0("lambda_", y)] <- gamma
+
+    } else {
+
+      ests[paste0(y, "_A0")] <- pnorm((nu)/sqrt(1 + lambda^2))
+      ests[paste0(y, "_A1")] <- pnorm((nu + gamma * lambda)/sqrt(1 + lambda^2))
+
+      d0 <- dnorm((nu)/sqrt(1 + lambda^2))
+      d1 <- dnorm((nu + gamma * lambda)/sqrt(1 + lambda^2))
+
+      j[paste0(y, "_A0"), paste0("nu_", y)] <- d0 * 1/sqrt(1 + lambda^2)
+      j[paste0(y, "_A0"), paste0("lambda_", y)] <-
+        d0 * (-nu * lambda) / (1 + lambda^2)^(3/2)
+
+      j[paste0(y, "_A1"), paste0("nu_", y)] <- d1 * 1/sqrt(1 + lambda^2)
+      j[paste0(y, "_A1"), "gamma"] <- d1 * lambda/sqrt(1 + lambda^2)
+      j[paste0(y, "_A0"), paste0("lambda_", y)] <-
+        d1 * (gamma - nu * lambda) / (1 + lambda^2)^(3/2)
+
+    }
+  }
+
+  v_est <- j %*% V %*% t(j)
+
+  out <- list(
+    estimate = ests,
+    vcov = v_est
+  )
+  return(out)
+}
+
+
 estimate_marginal <- function(model) {
 
   estimate <- model$estimate

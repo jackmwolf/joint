@@ -4,7 +4,7 @@
 \alias{joint_sem_sl}
 \title{Wrapper function for \code{joint_sem} for Super Learning.}
 \usage{
-joint_sem_sl(x, y, yname, categorical, ...)
+joint_sem_sl(x, y, yname, treatment, categorical, phi_init = NULL, ...)
 }
 \arguments{
 \item{x}{Matrix of secondary endpoints and treatment indicator}
@@ -13,8 +13,13 @@ joint_sem_sl(x, y, yname, categorical, ...)
 
 \item{yname}{Character name for primary endpoint}
 
+\item{treatment}{Character name of the column name corresponding to binary
+0-1 treatment indicator.}
+
 \item{categorical}{Character vector of endpoint names to be treated as
 categorical (binary or ordinal) variables}
+
+\item{phi_init}{Optional. Vector of initial parameter values for estimation.}
 
 \item{...}{additional arguments to [stats::nlm()].}
 }
