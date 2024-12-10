@@ -597,12 +597,12 @@ estimate_ma_6 <- function(
     ate_saturated <- unname(coef(xyz_saturated)[2])
     v_saturated <- unname(vcov(xyz_saturated)[2, 2])
 
-    mu0_satuated <- mean(data0[[primary]][data0[[treatment]] == 0])
-    mu1_satuated <- mean(data0[[primary]][data0[[treatment]] == 1])
+    mu0_satuated <- mean(as.numeric(data0[[primary]][data0[[treatment]] == 0]))
+    mu1_satuated <- mean(as.numeric(data0[[primary]][data0[[treatment]] == 1]))
 
-    v_mu0_saturated <- var(data0[[primary]][data0[[treatment]] == 0]) /
+    v_mu0_saturated <- var(as.numeric(data0[[primary]][data0[[treatment]] == 0])) /
       sum(data0[[treatment]] == 0)
-    v_mu1_saturated <- var(data0[[primary]][data0[[treatment]] == 1]) /
+    v_mu1_saturated <- var(as.numeric(data0[[primary]][data0[[treatment]] == 1])) /
       sum(data0[[treatment]] == 1)
 
     mu0_sem <- unname(mu_sem$estimate[paste0(primary, "_A0")])
