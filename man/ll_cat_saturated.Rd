@@ -38,16 +38,16 @@ categorical (binary or ordinal) variables}
 endpoints)}
 
 \item{Sigma}{Matrix of endpoint covariances. Some entries are overwritten by
-`phi` before likelihood calculation.}
+\code{phi} before likelihood calculation.}
 }
 \value{
 The log likelihood for the input parameters and data
 }
 \description{
-`ll_cat_saturated()` calculates the conditional log likelihood for all
+\code{ll_cat_saturated()} calculates the conditional log likelihood for all
 categorical endpoints (conditional on all continuous endpoints) for input
 marginal mean and variance matrices. As this function is used internally for
-likelihood maximization, the primary input (`phi`) is a vector of covariance
+likelihood maximization, the primary input (\code{phi}) is a vector of covariance
 terms for all continuous by categorical and categorical by categorical
 covariances.
 }

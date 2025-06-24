@@ -2,7 +2,7 @@
 % Please edit documentation in R/superlearner.R
 \name{joint_vglm_sl}
 \alias{joint_vglm_sl}
-\title{Wrapper function for \code{VGAM::vglm} for Super Learning.}
+\title{Wrapper function for \code{VGAM::vglm} for super learning.}
 \usage{
 joint_vglm_sl(x, y, yname, treatment, ...)
 }
@@ -13,9 +13,17 @@ joint_vglm_sl(x, y, yname, treatment, ...)
 
 \item{yname}{Character name for primary endpoint}
 
+\item{treatment}{Character name of the column name corresponding to binary
+0-1 treatment indicator.}
+
+\item{...}{additional arguments to \code{\link[stats:nlm]{stats::nlm()}}.}
+
 \item{categorical}{Character vector of endpoint names to be treated as
 categorical (binary or ordinal) variables}
 }
+\value{
+An object of class \link[VGAM:vglm]{VGAM::vglm}
+}
 \description{
-Wrapper function for \code{VGAM::vglm} for Super Learning.
+Wrapper function for \code{VGAM::vglm} for super learning.
 }

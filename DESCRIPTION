@@ -1,7 +1,7 @@
 Package: joint
 Type: Package
 Title: Fit Joint Endpoint Models to Efficiently Estimate Treatment Effects
-Version: 0.3.0.9014
+Version: 0.3.0.9015
 Authors@R: 
     person(given = "Jack",
            family = "Wolf",
@@ -9,12 +9,9 @@ Authors@R:
            email = "jackwolf910@gmail.com",
            comment = c(ORCID = "0000-0002-8919-8740"))
 Maintainer: Jack M Wolf <jackwolf910@gmail.com>
-Description: Efficiently estimate the average treatment effect by gaining 
-    efficiency from secondary endpoints. Two joint models are fit for the 
-    primary and secondary endpoints. One is saturated while the other uses
-    structural equation modeling constaints to gain efficiency. Model averaging
-    protects against bias from structural equation modeling under 
-    misspecification.
+Description: Provides functions for efficient treatment estimation in randomized
+    trials by jointly modeling multiple endpoints using methods introduced by
+    Wolf et al. (2025)  <doi:10.48550/arXiv.2506.03393>.
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
@@ -23,13 +20,18 @@ Depends:
 RoxygenNote: 7.3.2
 URL: https://github.com/jackmwolf/joint
 BugReports: https://github.com/jackmwolf/joint/issues
+Roxygen: list(markdown = TRUE)
 Imports: 
     MASS,
     mvnfast,
     mvtnorm,
     numDeriv,
     R6,
+    Rdpack,
     rpart,
     Rsolnp,
     sl3,
     VGAM
+Suggests: 
+    spelling
+Language: en-US

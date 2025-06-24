@@ -2,13 +2,13 @@
 % Please edit documentation in R/simulation_study_wrappers.R
 \name{joint_ma_sim}
 \alias{joint_ma_sim}
-\title{Estimate the ATE with various methods for simulation studies}
+\title{Estimate the ATE using the saturated, SEM, BMA-SEM, and SL-SEM estimators}
 \usage{
 joint_ma_sim(
   data0,
   endpoints,
-  categorical = c(),
   treatment = "A",
+  primary,
   n_boot = 100,
   ci_level = 0.95,
   sandwich = FALSE,
@@ -20,34 +20,46 @@ joint_ma_sim(
 
 \item{endpoints}{Character vector of endpoint names as in \code{data0}}
 
-\item{categorical}{Character vector of endpoint names to be treated as
-categorical (binary or ordinal) variables}
-
 \item{treatment}{Character name of the column name corresponding to binary
 0-1 treatment indicator.}
+
+\item{primary}{Name of the primary endpoint}
 
 \item{n_boot}{Number of bootstrap replications to perform}
 
 \item{ci_level}{The confidence level required}
 
 \item{sandwich}{Logical indicator for whether to return the sandwich variance
-estimator in addition to the model-based estimator.}
+estimate in addition to the model-based estimator.}
 
-\item{...}{additional arguments to [stats::nlm()].}
+\item{...}{additional arguments to \code{\link[stats:nlm]{stats::nlm()}}.}
 }
 \value{
-A data.frame with point estimates, standard error estimates, test
-  statistics, and 95% confidence interval bounds
+A data.frame with point estimates, standard error estimates, and
+bootstrapped percentile confidence interval bounds
 }
 \description{
-Estimate the ATE with various methods for simulation studies
+Estimate the ATE using the saturated, SEM, BMA-SEM, and SL-SEM estimators
 }
 \examples{
+\donttest{
 data(joint_example)
 # Using n_boot = 5 for example purposes only, use more bootstrap iterations
 # in practice!
-\donttest{
-  joint_ma_sim(joint_example, c("Y1", "Y2", "Y3"), n_boot = 5)
-}
+# Continuous endpoint (ATE)
+joint_ma_sim(
+  data0 = joint_example,
+  endpoints = c("Y1", "Y2", "Y3_cat"),
+  treatment = "A",
+  primary = "Y1",
+  n_boot = 1)
 
+# Binary endpoint (risk difference ATE)
+joint_ma_sim(
+  data0 = joint_example,
+  endpoints = c("Y1", "Y2", "Y3_cat"),
+  treatment = "A",
+  primary = "Y3_cat",
+  n_boot = 1)
+}
 }

@@ -9,7 +9,7 @@
 }
 \value{
 Learner object with methods for training and prediction.
-  See \code{\link{Lrnr_base}} for documentation on learners.
+See \code{\link{Lrnr_base}} for documentation on learners.
 }
 \description{
 \code{sl3} Learner for SEM \code{joint_sem}.
@@ -19,8 +19,9 @@ Learner object with methods for training and prediction.
 \section{Parameters}{
 
 \describe{
-  \item{\code{...}}{ Other parameters passed directly to \code{joint_sem}. See its documentation for details.
-  }
+\item{\code{...}}{Other parameters passed directly to \code{joint_sem}.
+See its documentation for details.
+}
 }
 }
 

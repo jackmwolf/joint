@@ -1,5 +1,6 @@
-# SUPER LEARNING HELPERS =======================================================
-#' Wrapper function for \code{joint_sem} for Super Learning.
+## SUPER LEARNING HELPERS ======================================================
+
+#' Wrapper function for \code{joint_sem} for super learning.
 #' @param x Matrix of secondary endpoints and treatment indicator
 #' @param y Vector of primary endpoint measurements
 #' @param yname Character name for primary endpoint
@@ -7,7 +8,8 @@
 #'   categorical (binary or ordinal) variables
 #' @inheritParams joint_sem
 #' @inherit joint_sem return
-joint_sem_sl <- function(x, y, yname, treatment, categorical, phi_init = NULL, ...) {
+joint_sem_sl <- function(x, y, yname, treatment, categorical, phi_init = NULL,
+                         ...) {
 
   data0 <- data.frame(y, x)
 
@@ -26,12 +28,15 @@ joint_sem_sl <- function(x, y, yname, treatment, categorical, phi_init = NULL, .
   fit_object
 }
 
-#' Wrapper function for \code{VGAM::vglm} for Super Learning.
+#' Wrapper function for \code{VGAM::vglm} for super learning.
 #' @param x Matrix of secondary endpoints and treatment indicator
 #' @param y Vector of primary endpoint measurements
 #' @param yname Character name for primary endpoint
 #' @param categorical Character vector of endpoint names to be treated as
 #'   categorical (binary or ordinal) variables
+#' @inheritParams joint_sem
+#' @return An object of class [VGAM::vglm]
+#' @importFrom stats as.formula
 joint_vglm_sl <- function(x, y, yname, treatment, ...) {
 
   data0 <- data.frame(y, x)
@@ -48,7 +53,7 @@ joint_vglm_sl <- function(x, y, yname, treatment, ...) {
   fit_object
 }
 
-#' Predict method for \code{joint_sem} for Super Learning.
+#' Predict method for \code{joint_sem} for super learning.
 #' @param object An object of class \code{joint_sem}
 #' @param newdata An optional data frame with treatment indicators. If omitted
 #'   the treatment indicators from the fitted model are used.
@@ -75,7 +80,9 @@ predict.joint_sem <- function(object, newdata) {
     mu0 <- nu
 
     # Thresholds for integration
-    logdiffs <- object$estimate[grep(paste0("logdiffa_", yname, "_"), names(object$estimate))]
+    logdiffs <- object$estimate[
+      grep(paste0("logdiffa_", yname, "_"), names(object$estimate))]
+
     diffs <- exp(logdiffs)
 
     thresholds <- c(
@@ -95,8 +102,12 @@ predict.joint_sem <- function(object, newdata) {
 
     # Return matrix of predicted probabilities
     out <- matrix(nrow = length(A), ncol = length(preds_1))
-    out[A == 1, ] <- matrix(preds_1, nrow = sum(A == 1), ncol = length(preds_1), byrow = TRUE)
-    out[A == 0, ] <- matrix(preds_0, nrow = sum(A == 0), ncol = length(preds_1), byrow = TRUE)
+
+    out[A == 1, ] <-
+      matrix(preds_1, nrow = sum(A == 1), ncol = length(preds_1), byrow = TRUE)
+
+    out[A == 0, ] <-
+      matrix(preds_0, nrow = sum(A == 0), ncol = length(preds_1), byrow = TRUE)
 
     # Return packed_predictions object for sl3 loss function
     out <- sl3::pack_predictions(out)
@@ -142,6 +153,7 @@ predict.joint_vglm <- function(object, newdata) {
 
   # Return packed_predictions object for sl3 loss function
   out <- sl3::pack_predictions(preds)
+
   return(out)
 
 }
@@ -158,7 +170,8 @@ predict.joint_vglm <- function(object, newdata) {
 ##'
 ##' @section Parameters:
 ##' \describe{
-##'   \item{\code{...}}{ Other parameters passed directly to \code{joint_sem}. See its documentation for details.
+##'   \item{\code{...}}{Other parameters passed directly to \code{joint_sem}.
+##'   See its documentation for details.
 ##'   }
 ##' }
 ##'
@@ -239,8 +252,6 @@ Lrnr_sem <- R6::R6Class(
 ##'
 ##' @importFrom R6 R6Class
 ##'
-##' @export
-##'
 ##' @keywords data
 ##'
 ##' @return A learner object inheriting from \code{\link{Lrnr_base}} with
@@ -251,19 +262,6 @@ Lrnr_sem <- R6::R6Class(
 ##'  \code{\link{Lrnr_base}}.
 ##'
 ##' @family Learners
-##'
-##' @section Parameters:
-##'   - \code{param_1="default_1"}: This parameter does something and is not
-##'      already specified in the task.
-##'   - \code{param_2="default_2"}: This parameter does something else and is
-##'      not already specified in the task.
-##'   - \code{...}: Other parameters passed directly to
-##'      \code{\link[my_package]{my_ml_fun}}. See its documentation for details.
-##'      Also, any additional parameters that can be considered by
-##'      \code{\link{Lrnr_base}}.
-##'
-##' @examples
-##' include an example here, e.g. see \code{\link{Lrnr_ranger}}'s example.
 ##'
 Lrnr_vglm <- R6Class(
   classname = "Lrnr_vglm",

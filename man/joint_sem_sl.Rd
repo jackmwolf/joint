@@ -2,7 +2,7 @@
 % Please edit documentation in R/superlearner.R
 \name{joint_sem_sl}
 \alias{joint_sem_sl}
-\title{Wrapper function for \code{joint_sem} for Super Learning.}
+\title{Wrapper function for \code{joint_sem} for super learning.}
 \usage{
 joint_sem_sl(x, y, yname, treatment, categorical, phi_init = NULL, ...)
 }
@@ -21,11 +21,25 @@ categorical (binary or ordinal) variables}
 
 \item{phi_init}{Optional. Vector of initial parameter values for estimation.}
 
-\item{...}{additional arguments to [stats::nlm()].}
+\item{...}{additional arguments to \code{\link[stats:nlm]{stats::nlm()}}.}
 }
 \value{
-An object of class [joint_sem]
+An object of class \link{joint_sem}
+
+An object of class {"joint_sem"} is a list containing at least the
+following components:
+\item{estimate}{The vector of estimated model parameters}
+\item{ll}{The maximized log likelihood}
+\item{dim_phi}{The number of model parameters}
+\item{runtime}{The run time in seconds}
+\item{endpoints}{The input vector of endpoints}
+\item{categorical}{The vector of endpoints treated as categorical}
+\item{V_model}{The model-based parameter variance estimate}
+\item{nlm_code}{An integer indicating why the optimization process
+terminated; see {"code"} from \code{\link[stats:nlm]{stats::nlm()}}}
+\item{nlm_iterations}{The number of \code{\link[stats:nlm]{stats::nlm()}} iterations performed}
+\item{call}{The matched call}
 }
 \description{
-Wrapper function for \code{joint_sem} for Super Learning.
+Wrapper function for \code{joint_sem} for super learning.
 }

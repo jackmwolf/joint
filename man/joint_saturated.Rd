@@ -14,20 +14,28 @@ joint_saturated(data0, endpoints, treatment = "A", ...)
 \item{treatment}{Character name of the column name corresponding to binary
 0-1 treatment indicator.}
 
-\item{...}{additional arguments to [stats::nlm()].}
+\item{...}{additional arguments to \code{\link[stats:nlm]{stats::nlm()}}.}
 }
 \value{
-An object of class [joint_sem]
+An object of class \link{joint_sem}
+
+An object of class {"joint_sem"} is a list containing at least the
+following components:
+\item{estimate}{The vector of estimated model parameters}
+\item{ll}{The maximized log likelihood}
+\item{dim_phi}{The number of model parameters}
+\item{runtime}{The run time in seconds}
+\item{endpoints}{The input vector of endpoints}
+\item{categorical}{The vector of endpoints treated as categorical}
+\item{V_model}{The model-based parameter variance estimate}
+\item{nlm_code}{An integer indicating why the optimization process
+terminated; see {"code"} from \code{\link[stats:nlm]{stats::nlm()}}}
+\item{nlm_iterations}{The number of \code{\link[stats:nlm]{stats::nlm()}} iterations performed}
+\item{call}{The matched call}
 }
 \description{
-`joint_saturated` fits a saturated joint model for all endpoints. Marginal
+\code{joint_saturated} fits a saturated joint model for all endpoints. Marginal
 distributions are estimated through either linear or probit regression. The
 appropriate variance and covariance terms are estimated through maximum
 likelihood and the log likelihood is returned.
-}
-\examples{
-data(joint_example)
-fit <- joint_saturated(
-  joint_example, endpoints = c("Y1", "Y2", "Y3_cat"))
-fit
 }

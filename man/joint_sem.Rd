@@ -2,7 +2,7 @@
 % Please edit documentation in R/estimate_sem.R
 \name{joint_sem}
 \alias{joint_sem}
-\title{Estimate a joint model using SEM constraints}
+\title{Estimate a one-factor structural equation}
 \usage{
 joint_sem(
   data0,
@@ -23,19 +23,43 @@ joint_sem(
 0-1 treatment indicator.}
 
 \item{sandwich}{Logical indicator for whether to return the sandwich variance
-estimator in addition to the model-based estimator.}
+estimate in addition to the model-based estimator.}
 
 \item{debug}{Logical indicator to print diagnostic information}
 
 \item{phi_init}{Optional. Vector of initial parameter values for estimation.}
 
-\item{...}{additional arguments to [stats::nlm()].}
+\item{...}{additional arguments to \code{\link[stats:nlm]{stats::nlm()}}.}
 }
 \value{
-An object of class [joint_sem]
+An object of class \link{joint_sem}
+
+An object of class {"joint_sem"} is a list containing at least the
+following components:
+\item{estimate}{The vector of estimated model parameters}
+\item{ll}{The maximized log likelihood}
+\item{dim_phi}{The number of model parameters}
+\item{runtime}{The run time in seconds}
+\item{endpoints}{The input vector of endpoints}
+\item{categorical}{The vector of endpoints treated as categorical}
+\item{V_model}{The model-based parameter variance estimate}
+\item{nlm_code}{An integer indicating why the optimization process
+terminated; see {"code"} from \code{\link[stats:nlm]{stats::nlm()}}}
+\item{nlm_iterations}{The number of \code{\link[stats:nlm]{stats::nlm()}} iterations performed}
+\item{call}{The matched call}
 }
 \description{
-Estimate a joint model using SEM constraints
+\code{joint_sem} estimates a one-factor structural equation model for the
+relationship between a binary treatment indicator and three or more
+endpoints.
+}
+\details{
+For numerical endpoints, the following model is used:
+\deqn{
+  \vec{Y}|A \sim N(\nu + \gamma\vec\lambda A, diag(\vec\theta) +
+  \vec\lambda\vec\lambda^T)
+}
+A probit model is used for binary and ordinal endpoints.
 }
 \examples{
 data(joint_example)
@@ -43,4 +67,10 @@ fit <- joint_sem(
   joint_example, endpoints = c("Y1", "Y2", "Y3_cat"))
 fit
 estimate_effects(fit, risk_difference = "Y3_cat")
+
+}
+\references{
+{
+\insertRef{wolf_jointly_2025}{joint}
+}
 }

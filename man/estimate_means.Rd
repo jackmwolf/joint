@@ -2,12 +2,12 @@
 % Please edit documentation in R/estimate_sem.R
 \name{estimate_means}
 \alias{estimate_means}
-\title{Estimate conditional means  from a joint model}
+\title{Estimate conditional means from a joint SEM}
 \usage{
 estimate_means(model, sandwich = FALSE)
 }
 \arguments{
-\item{model}{An object of class [joint_sem]}
+\item{model}{An object of class \link{joint_sem}}
 
 \item{sandwich}{Logical indicator to use the sandwich variance estimator}
 }
@@ -15,7 +15,7 @@ estimate_means(model, sandwich = FALSE)
 A list of mean estimates and variances
 }
 \description{
-Estimate conditional means  from a joint model
+Estimate conditional means from a joint SEM
 }
 \examples{
 data(joint_example)
@@ -23,4 +23,5 @@ fit <- joint_sem(
   joint_example, endpoints = c("Y1", "Y2", "Y3_cat"))
 fit
 estimate_effects(fit, risk_difference = "Y3_cat")
+
 }

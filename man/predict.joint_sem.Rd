@@ -2,7 +2,7 @@
 % Please edit documentation in R/superlearner.R
 \name{predict.joint_sem}
 \alias{predict.joint_sem}
-\title{Predict method for \code{joint_sem} for Super Learning.}
+\title{Predict method for \code{joint_sem} for super learning.}
 \usage{
 \method{predict}{joint_sem}(object, newdata)
 }
@@ -16,5 +16,5 @@ the treatment indicators from the fitted model are used.}
 Predicted outcomes given treatment indicators.
 }
 \description{
-Predict method for \code{joint_sem} for Super Learning.
+Predict method for \code{joint_sem} for super learning.
 }

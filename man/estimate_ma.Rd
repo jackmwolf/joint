@@ -2,30 +2,48 @@
 % Please edit documentation in R/estimate_model_average.R
 \name{estimate_ma}
 \alias{estimate_ma}
-\title{Estimate the ATE using model averaging}
+\title{Estimate the ATE and conditional means using the saturated, SEM, BMA, and SL
+estimators}
 \usage{
-estimate_ma(data0, endpoints, categorical, treatment, sandwich, ...)
+estimate_ma(
+  data0,
+  endpoints,
+  treatment = "A",
+  primary,
+  n_boot = 100,
+  ci_level = 0.95,
+  sandwich = FALSE,
+  force_probit = FALSE,
+  ...
+)
 }
 \arguments{
 \item{data0}{Data frame with treatment assignment and endpoints}
 
 \item{endpoints}{Character vector of endpoint names as in \code{data0}}
 
-\item{categorical}{Character vector of endpoint names to be treated as
-categorical (binary or ordinal) variables}
-
 \item{treatment}{Character name of the column name corresponding to binary
 0-1 treatment indicator.}
 
-\item{sandwich}{Logical indicator for whether to return the sandwich variance
-estimator in addition to the model-based estimator.}
+\item{primary}{Name of the primary endpoint}
 
-\item{...}{additional arguments to [stats::nlm()].}
+\item{n_boot}{Number of bootstrap samples}
+
+\item{ci_level}{Confidence level}
+
+\item{sandwich}{Logical indicator for whether to return the sandwich variance
+estimate in addition to the model-based estimator.}
+
+\item{force_probit}{For binary endpoints only. If TRUE, reports probit
+regression coefficient instead of risk difference.}
+
+\item{...}{additional arguments to \code{\link[stats:nlm]{stats::nlm()}}.}
 }
 \value{
-A list with point estimates using BIC model averaging and
-  sub-model estimates, SE estimates, and weights.
+A vector of point estimates using the saturated, SEM, BMA, and SL
+estimators, variance estimates, and BMA and SL model weights
 }
 \description{
-Estimate the ATE using model averaging
+Estimate the ATE and conditional means using the saturated, SEM, BMA, and SL
+estimators
 }

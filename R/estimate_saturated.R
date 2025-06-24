@@ -1,4 +1,4 @@
-## FUNCTIONS FOR ESTIMATING SATURATED JOINT MODELS
+## FUNCTIONS FOR ESTIMATING SATURATED JOINT MODELS =============================
 
 #' Estimate a saturated joint model
 #'
@@ -9,16 +9,9 @@
 #'
 #' @inheritParams joint_sem
 #'
-#' @return An object of class [joint_sem]
-#'
+#' @inherit joint_sem return
 #' @importFrom stats coef glm binomial lm residuals coefficients predict nlm
 #' @importFrom VGAM vglm cumulative
-#' @examples
-#' data(joint_example)
-#' fit <- joint_saturated(
-#'   joint_example, endpoints = c("Y1", "Y2", "Y3_cat"))
-#' fit
-#' @export
 joint_saturated <- function(data0, endpoints,
                             treatment = "A", ...) {
   t0 <- Sys.time()
@@ -55,11 +48,17 @@ joint_saturated <- function(data0, endpoints,
           as.numeric(data0[, endpoints[p]]) ~ data0[[treatment]],
           family = VGAM::cumulative(link="probitlink", parallel=TRUE)
           )
-        thresholds <- c(-Inf, coef(models[[p]])[1:length(unique(data0[, endpoints[p]]))-1], Inf)
+        thresholds <- c(
+          -Inf,
+          coef(models[[p]])[1:length(unique(data0[, endpoints[p]]))-1],
+          Inf)
         lb[, p] <- thresholds[as.numeric(data0[, endpoints[p]])]
         ub[, p] <- thresholds[as.numeric(data0[, endpoints[p]]) + 1]
+
       } else {
-        models[[p]] <- glm(data0[, endpoints[p]] ~ data0[[treatment]], family = binomial("probit"))
+        models[[p]] <- glm(
+          data0[, endpoints[p]] ~ data0[[treatment]],
+          family = binomial("probit"))
         thresholds <- c(-Inf, 0, Inf)
         lb[, p] <- thresholds[as.numeric(data0[, endpoints[p]])]
         ub[, p] <- thresholds[as.numeric(data0[, endpoints[p]]) + 1]
@@ -113,7 +112,8 @@ joint_saturated <- function(data0, endpoints,
 
     # Take required parameters of variance matrix for
     # Cov(X_continuous, X_categorical) and Cov(X_categorical, X_categorical)
-    # by ignoring the first (P - q) * (P - q - 1)/2 elements of the upper triangle
+    # by ignoring the first (P - q) * (P - q - 1)/2 elements of the upper
+    # triangle
     n_exclude <- (P - q) * (P - q - 1)/2
     if (n_exclude == 0) {
       phi_init <- V_hat[upper.tri(V_hat)]
@@ -201,7 +201,8 @@ joint_saturated <- function(data0, endpoints,
 #' @importFrom MASS ginv
 #' @importFrom mvtnorm pmvnorm
 #' @return The log likelihood for the input parameters and data
-ll_cat_saturated <- function(phi, data0, endpoints, categorical, treatment, continuous, lb, ub, mu, Sigma) {
+ll_cat_saturated <- function(phi, data0, endpoints, categorical, treatment,
+                             continuous, lb, ub, mu, Sigma) {
 
   P <- length(endpoints)
   q <- length(categorical)
@@ -246,11 +247,13 @@ ll_cat_saturated <- function(phi, data0, endpoints, categorical, treatment, cont
 
   # Calculate probabilities for each observation by integrating over
   # q-dimensional hyper-rectangle bounded within lb[i, ], ub[i, ]
-  # SLOW AND REQUIRES INVERTING SIGMA EVERY TIME
   for (i in 1:n) {
     ll_categorical[i] <- log(
       mvtnorm::pmvnorm(
-        lower = lb[i, categorical], upper = ub[i, categorical], mean = c_e[i, categorical], sigma = c_v,
+        lower = lb[i, categorical],
+        upper = ub[i, categorical],
+        mean = c_e[i, categorical],
+        sigma = c_v,
         keepAttr = FALSE))
   }
 

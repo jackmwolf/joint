@@ -2,7 +2,7 @@
 % Please edit documentation in R/estimate_sem.R
 \name{initalize_phi}
 \alias{initalize_phi}
-\title{Create initial vector of parameter values for estimating a joint model}
+\title{Create initial vector of parameter values for estimating a joint SEM}
 \usage{
 initalize_phi(data0, endpoints, categorical = c(), treatment, gamma = 2)
 }
@@ -21,8 +21,8 @@ categorical (binary or ordinal) variables}
 }
 \value{
 A named vector of initial parameter values for likelihood
-  maximization.
+maximization.
 }
 \description{
-Create initial vector of parameter values for estimating a joint model
+Create initial vector of parameter values for estimating a joint SEM
 }

@@ -6,12 +6,12 @@
 \title{\code{sl3} Learner for SEM \code{VGAM::vglm}.}
 \format{
 An \code{\link[R6]{R6Class}} object inheriting from
- \code{\link{Lrnr_base}}.
+\code{\link{Lrnr_base}}.
 }
 \value{
 A learner object inheriting from \code{\link{Lrnr_base}} with
- methods for training and prediction. For a full list of learner
- functionality, see the complete documentation of \code{\link{Lrnr_base}}.
+methods for training and prediction. For a full list of learner
+functionality, see the complete documentation of \code{\link{Lrnr_base}}.
 }
 \description{
 This is a template for defining a new learner.
@@ -23,18 +23,6 @@ documentation for your new learner.
 This learner uses \code{\link[my_package]{my_ml_fun}} from \code{my_package}
 to fit my favorite machine learning algorithm.
 }
-\section{Parameters}{
-
-  - \code{param_1="default_1"}: This parameter does something and is not
-     already specified in the task.
-  - \code{param_2="default_2"}: This parameter does something else and is
-     not already specified in the task.
-  - \code{...}: Other parameters passed directly to
-     \code{\link[my_package]{my_ml_fun}}. See its documentation for details.
-     Also, any additional parameters that can be considered by
-     \code{\link{Lrnr_base}}.
-}
-
 \seealso{
 Other Learners: 
 \code{\link{Lrnr_sem}}
