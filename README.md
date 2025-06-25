@@ -50,7 +50,7 @@ data from `Y2` and `Y3`, we could assume that the following one-factor
 structural equation model is correctly specified:
 
 ``` math
- \begin{pmatrix} Y_1 \\ Y_2 \\ Y_3 \end{pmatrix} |A \sim N\left\{\boldsymbol\nu + \gamma\boldsymbol\lambda A, \operatorname{diag}(\boldsymbol\theta)+\boldsymbol\lambda\boldsymbol\lambda^T \right\}
+ \begin{pmatrix} Y_1 \\ Y_2 \\ Y_3 \end{pmatrix} |A \sim N\left\{\boldsymbol\nu + \gamma\boldsymbol\lambda A, \text{diag}(\boldsymbol\theta)+\boldsymbol\lambda\boldsymbol\lambda^T \right\}
 ```
 and estimate the ATE via the maximum likelihood estimator,
 $`\widehat\tau_\text{SEM}=\widehat\gamma\widehat{\boldsymbol\lambda}`$.
